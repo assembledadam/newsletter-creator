@@ -1,6 +1,4 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { google } from 'https://deno.land/x/google_auth@v0.3.0/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,21 +19,23 @@ serve(async (req) => {
       throw new Error('Invalid Google Sheets URL')
     }
 
-    // Initialize Google Sheets API
-    const auth = new google.auth.GoogleAuth({
-      credentials: JSON.parse(Deno.env.get('GOOGLE_SERVICE_ACCOUNT') || ''),
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    })
+    // Get the API key from environment variable
+    const apiKey = Deno.env.get('GOOGLE_API_KEY')
+    if (!apiKey) {
+      throw new Error('Google API key not configured')
+    }
 
-    const sheets = google.sheets({ version: 'v4', auth })
-    
-    // Fetch sheet data
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: 'A2:C', // Assumes headers in row 1, data starts from A2
-    })
+    // Fetch sheet data directly using the API
+    const response = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A2:C?key=${apiKey}`
+    )
 
-    const rows = response.data.values || []
+    if (!response.ok) {
+      throw new Error('Failed to fetch sheet data')
+    }
+
+    const data = await response.json()
+    const rows = data.values || []
     
     // Transform rows into news items
     const items = rows.map(([title, description, source]) => ({
