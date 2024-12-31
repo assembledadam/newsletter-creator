@@ -7,11 +7,12 @@ export interface NewsItem {
 
 export interface Newsletter {
   id: string;
-  createdAt: string;
+  created_at: string;
   title: string;
   content: string;
-  sourceUrl: string;
+  source_url: string | null;
   items: NewsItem[];
+  user_id: string;
 }
 
 export interface Settings {

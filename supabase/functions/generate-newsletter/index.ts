@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { Configuration, OpenAIApi } from 'https://esm.sh/openai@3.1.0'
+import OpenAI from 'https://esm.sh/openai@4.28.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,10 +14,9 @@ serve(async (req) => {
   try {
     const { items, prompt, template } = await req.json()
 
-    const configuration = new Configuration({
+    const openai = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY'),
     })
-    const openai = new OpenAIApi(configuration)
 
     // Prepare the content for GPT
     const itemsText = items
@@ -26,7 +25,7 @@ serve(async (req) => {
 
     const systemPrompt = `${prompt}\n\nTemplate:\n${template}\n\nNews Items:\n${itemsText}`
 
-    const completion = await openai.createChatCompletion({
+    const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
         { role: 'system', content: systemPrompt },
@@ -36,7 +35,7 @@ serve(async (req) => {
       max_tokens: 2000,
     })
 
-    const content = completion.data.choices[0]?.message?.content || ''
+    const content = completion.choices[0]?.message?.content || ''
 
     return new Response(
       JSON.stringify({ content }),
@@ -46,6 +45,7 @@ serve(async (req) => {
       },
     )
   } catch (error) {
+    console.error('OpenAI API Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 

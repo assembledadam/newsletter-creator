@@ -7,24 +7,31 @@ import { NewsletterEditor } from '@/components/newsletter/NewsletterEditor';
 import { SheetUrlInput } from '@/components/newsletter/SheetUrlInput';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { useStore } from '@/lib/store';
+import { useAuth } from '@/contexts/AuthContext';
 import type { NewsItem } from '@/lib/types';
 
 export default function NewNewsletter() {
   const navigate = useNavigate();
   const { createNewsletter } = useNewsletters();
+  const { settings } = useStore();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<NewsItem[]>([]);
   const [content, setContent] = useState('');
   const [step, setStep] = useState<'url' | 'select' | 'edit'>('url');
+  const [error, setError] = useState<string | null>(null);
 
   const handleFetchItems = async (url: string) => {
     setLoading(true);
+    setError(null);
     try {
       const newsItems = await fetchNewsItems(url);
-      setItems(newsItems);
+      setItems(newsItems.map(item => ({ ...item, selected: false })));
       setStep('select');
     } catch (error) {
       console.error('Failed to fetch items:', error);
+      setError('Failed to fetch items from the Google Sheet. Please check the URL and try again.');
     } finally {
       setLoading(false);
     }
@@ -32,9 +39,10 @@ export default function NewNewsletter() {
 
   const handleGenerate = async (selectedItems: NewsItem[]) => {
     setLoading(true);
+    setError(null);
     try {
       const { content } = await generateNewsletterContent(
-        selectedItems,
+        selectedItems.filter(item => item.selected),
         settings.promptTemplate,
         settings.newsletterTemplate
       );
@@ -42,19 +50,21 @@ export default function NewNewsletter() {
       setStep('edit');
     } catch (error) {
       console.error('Failed to generate newsletter:', error);
+      setError('Failed to generate newsletter. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleSave = () => {
+    if (!user) return;
+    
     const newsletter = {
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
       title: `Newsletter ${new Date().toLocaleDateString()}`,
       content,
-      sourceUrl: '',
+      source_url: '',
       items,
+      user_id: user.id
     };
     createNewsletter(newsletter);
     navigate('/');
@@ -70,6 +80,11 @@ export default function NewNewsletter() {
 
   return (
     <div className="space-y-8">
+      {error && (
+        <div className="bg-red-50 text-red-700 p-4 rounded-md">
+          {error}
+        </div>
+      )}
       {step === 'url' && <SheetUrlInput onSubmit={handleFetchItems} />}
       {step === 'select' && <NewsItemList items={items} onGenerate={handleGenerate} />}
       {step === 'edit' && (
