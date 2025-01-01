@@ -13,17 +13,23 @@ serve(async (req) => {
 
   try {
     const { items, prompt, template } = await req.json()
+    
+    console.log('Received items:', JSON.stringify(items, null, 2))
 
     const openai = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY'),
     })
 
-    // Prepare the content for GPT
+    // Prepare the content for GPT with URLs included
     const itemsText = items
-      .map((item: any) => `Title: ${item.title}\nDescription: ${item.description}\nSource: ${item.source}\n`)
+      .map((item: any) => `Title: ${item.title}
+Description: ${item.description}
+Source: ${item.source}${item.url ? `\nURL: ${item.url}` : ''}\n`)
       .join('\n')
 
     const systemPrompt = `${prompt}\n\nTemplate:\n${template}\n\nNews Items:\n${itemsText}`
+    
+    console.log('System prompt:', systemPrompt)
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
