@@ -2,6 +2,7 @@ export interface NewsItem {
   title: string;
   description: string;
   source: string;
+  url: string;
   selected?: boolean;
 }
 
