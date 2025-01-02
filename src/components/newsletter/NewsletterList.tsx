@@ -7,7 +7,7 @@ interface Props {
 }
 
 export function NewsletterList({ newsletters }: Props) {
-  const { deleteNewsletter } = useNewsletters();
+  const { deleteNewsletter, updateNewsletter } = useNewsletters();
 
   if (newsletters.length === 0) {
     return (
@@ -29,6 +29,7 @@ export function NewsletterList({ newsletters }: Props) {
           key={newsletter.id} 
           newsletter={newsletter} 
           onDelete={deleteNewsletter}
+          onUpdate={(id, updates) => updateNewsletter({ id, newsletter: updates })}
         />
       ))}
     </div>
