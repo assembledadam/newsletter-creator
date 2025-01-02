@@ -59,7 +59,7 @@ export default function Settings() {
             GPT Prompt Template
           </label>
           <textarea
-            className="w-full h-40 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full h-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             value={localSettings.promptTemplate}
             onChange={(e) =>
               setLocalSettings({ ...localSettings, promptTemplate: e.target.value })
@@ -72,7 +72,7 @@ export default function Settings() {
             Newsletter Template
           </label>
           <textarea
-            className="w-full h-40 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full h-screen px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             value={localSettings.newsletterTemplate}
             onChange={(e) =>
               setLocalSettings({ ...localSettings, newsletterTemplate: e.target.value })
