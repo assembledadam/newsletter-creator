@@ -3,7 +3,6 @@ import { format } from 'https://esm.sh/date-fns@2.30.0';
 import { searchHistoricalEvents } from './research.ts';
 
 export async function getOnThisDayFact(openai: OpenAI): Promise<string> {
-  // Use a simpler date format that doesn't include ordinal indicators
   const today = format(new Date(), 'MMMM d');
 
   const completion = await openai.chat.completions.create({
@@ -11,7 +10,7 @@ export async function getOnThisDayFact(openai: OpenAI): Promise<string> {
     messages: [
       {
         role: 'user',
-        content: `Today is ${today}. Find an interesting historical fact about technology R&D that happened on this day.`
+        content: `Today is ${today}. Find a significant technological breakthrough, invention, or scientific discovery that happened on this day. Focus on concrete achievements like first successful demonstrations, patent grants, or research breakthroughs.`
       }
     ],
     functions: [
@@ -33,25 +32,28 @@ export async function getOnThisDayFact(openai: OpenAI): Promise<string> {
     function_call: { name: 'searchHistoricalEvents' }
   });
 
-  // Get the function call
   const functionCall = completion.choices[0]?.message?.function_call;
   if (!functionCall) {
     throw new Error('No function call received from GPT');
   }
 
-  // Parse the arguments
   const { date } = JSON.parse(functionCall.arguments);
-
-  // Search for historical events
   const searchResults = await searchHistoricalEvents(date);
 
-  // Ask GPT to analyze the search results
   const finalCompletion = await openai.chat.completions.create({
     model: 'gpt-4',
     messages: [
       {
         role: 'system',
-        content: 'You are a technology historian. Create a concise and interesting fact about technology R&D history based on the search results provided. Focus on verifiable facts and include the year in your response.'
+        content: `You are a technology historian specializing in breakthrough innovations. Create a concise and engaging fact about a significant technological achievement that occurred on this day in history. Focus specifically on:
+
+1. First successful demonstrations of new technologies
+2. Groundbreaking patent grants
+3. Major scientific or engineering breakthroughs
+4. Launch of revolutionary products or systems
+5. Key discoveries that enabled future innovations
+
+Include the specific year and, if relevant, the names of key inventors or researchers. Aim to highlight concrete achievements rather than general historical events.`
       },
       {
         role: 'user',
