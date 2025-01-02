@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { signOut } from '@/lib/auth';
-import { LogOut } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 
 export function Navigation() {
   const navigate = useNavigate();
@@ -20,12 +20,16 @@ export function Navigation() {
     <nav className="bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex">
-            <Link to="/" className="flex-shrink-0 flex items-center">
-              <h1 className="text-xl font-bold">R&D Newsletter Manager</h1>
+          <Link to="/" className="flex-shrink-0 flex items-center">
+            <h1 className="text-xl font-bold">R&D Newsletter Manager</h1>
+          </Link>
+          <div className="flex items-center space-x-4">
+            <Link to="/settings">
+              <Button variant="ghost">
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
+              </Button>
             </Link>
-          </div>
-          <div className="flex items-center">
             <Button
               variant="ghost"
               onClick={handleLogout}
