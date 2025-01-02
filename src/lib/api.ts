@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Newsletter, NewsItem } from './types';
+import type { Newsletter, NewsItem, Settings } from './types';
 
 export async function fetchNewsletters(): Promise<Newsletter[]> {
   const { data, error } = await supabase
@@ -71,4 +71,61 @@ export async function generateNewsletterContent(
 
   if (error) throw error;
   return data;
+}
+
+const DEFAULT_SETTINGS: Settings = {
+  promptTemplate: `You are an expert in R&D tax relief. Create a professional newsletter summarizing the following R&D tax news items. Use a conversational yet professional tone. Focus on the implications for tax advisors and accountants. Include a brief introduction paragraph before the main content. Format the content using markdown.`,
+  newsletterTemplate: `# R&D Tax Weekly Update
+
+[Introduction paragraph will go here]
+
+## Latest Updates
+
+[Main content will go here organized by topic]
+
+## Key Takeaways
+
+- [Bullet points summarizing main points]
+
+---
+*Want to discuss how these changes might affect your R&D tax claims? Let's connect.*`
+};
+
+export async function fetchSettings(): Promise<Settings> {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('*')
+    .eq('user_id', user.user.id)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  // Return default settings if none exist
+  if (!data) {
+    return DEFAULT_SETTINGS;
+  }
+
+  // Map database fields to application fields
+  return {
+    promptTemplate: data.prompt_template,
+    newsletterTemplate: data.newsletter_template
+  };
+}
+
+export async function saveSettings(settings: Settings): Promise<void> {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) throw new Error('Not authenticated');
+
+  const { error: upsertError } = await supabase
+    .from('user_settings')
+    .upsert({
+      user_id: user.user.id,
+      prompt_template: settings.promptTemplate,
+      newsletter_template: settings.newsletterTemplate
+    });
+
+  if (upsertError) throw upsertError;
 }

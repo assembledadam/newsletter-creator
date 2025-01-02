@@ -1,23 +1,55 @@
-import { useStore } from '@/lib/store';
+import { useSettings } from '@/lib/hooks/useSettings';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
-import { useState } from 'react';
+import { Save, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import type { Settings as SettingsType } from '@/lib/types';
 
 export default function Settings() {
-  const { settings, updateSettings } = useStore();
-  const [localSettings, setLocalSettings] = useState(settings);
+  const { settings, updateSettings, isLoading } = useSettings();
+  const [localSettings, setLocalSettings] = useState<SettingsType | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    updateSettings(localSettings);
+  useEffect(() => {
+    if (settings) {
+      setLocalSettings(settings);
+    }
+  }, [settings]);
+
+  const handleSave = async () => {
+    if (!localSettings) return;
+    
+    setIsSaving(true);
+    try {
+      await updateSettings(localSettings);
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading || !localSettings) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-2xl font-bold">Settings</h2>
-        <Button onClick={handleSave}>
-          <Save className="w-4 h-4 mr-2" />
-          Save Changes
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Save Changes
+            </>
+          )}
         </Button>
       </div>
 

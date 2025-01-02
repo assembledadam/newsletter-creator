@@ -1,20 +1,20 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNewsletters } from '@/lib/hooks/useNewsletters';
+import { useSettings } from '@/lib/hooks/useSettings';
 import { fetchNewsItems, generateNewsletterContent } from '@/lib/api';
 import { NewsItemList } from '@/components/newsletter/NewsItemList';
 import { NewsletterEditor } from '@/components/newsletter/NewsletterEditor';
 import { SheetUrlInput } from '@/components/newsletter/SheetUrlInput';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import { useStore } from '@/lib/store';
 import { useAuth } from '@/contexts/AuthContext';
 import type { NewsItem } from '@/lib/types';
 
 export default function NewNewsletter() {
   const navigate = useNavigate();
   const { createNewsletter } = useNewsletters();
-  const { settings } = useStore();
+  const { settings } = useSettings();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<NewsItem[]>([]);
@@ -38,7 +38,7 @@ export default function NewNewsletter() {
   };
 
   const handleGenerate = async (selectedItems: NewsItem[]) => {
-    if (!user) return;
+    if (!user || !settings) return;
     
     setLoading(true);
     setError(null);
