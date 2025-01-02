@@ -3,14 +3,15 @@ import { format } from 'https://esm.sh/date-fns@2.30.0';
 import { searchHistoricalEvents } from './research.ts';
 
 export async function getOnThisDayFact(openai: OpenAI): Promise<string> {
-  const today = format(new Date(), 'do of MMMM');
+  // Use a simpler date format that doesn't include ordinal indicators
+  const today = format(new Date(), 'MMMM d');
 
   const completion = await openai.chat.completions.create({
     model: 'gpt-4',
     messages: [
       {
         role: 'user',
-        content: `Today is the ${today}. Find an interesting historical fact about technology R&D that happened on this day.`
+        content: `Today is ${today}. Find an interesting historical fact about technology R&D that happened on this day.`
       }
     ],
     functions: [
@@ -22,7 +23,7 @@ export async function getOnThisDayFact(openai: OpenAI): Promise<string> {
           properties: {
             date: {
               type: 'string',
-              description: 'The date to search for in format "day of month"'
+              description: 'The date to search for in format "month day"'
             }
           },
           required: ['date']
