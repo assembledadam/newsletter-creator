@@ -9,6 +9,7 @@ export interface NewsItem {
 export interface Newsletter {
   id: string;
   created_at: string;
+  updated_at: string;
   title: string;
   content: string;
   source_url: string | null;
