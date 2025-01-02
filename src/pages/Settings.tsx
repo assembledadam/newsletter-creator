@@ -26,6 +26,22 @@ export default function Settings() {
     }
   };
 
+  const SaveButton = () => (
+    <Button onClick={handleSave} disabled={isSaving}>
+      {isSaving ? (
+        <>
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          Saving...
+        </>
+      ) : (
+        <>
+          <Save className="w-4 h-4 mr-2" />
+          Save Changes
+        </>
+      )}
+    </Button>
+  );
+
   if (isLoading || !localSettings) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -38,19 +54,7 @@ export default function Settings() {
     <div className="max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-2xl font-bold">Settings</h2>
-        <Button onClick={handleSave} disabled={isSaving}>
-          {isSaving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4 mr-2" />
-              Save Changes
-            </>
-          )}
-        </Button>
+        <SaveButton />
       </div>
 
       <div className="space-y-6">
@@ -72,13 +76,17 @@ export default function Settings() {
             Newsletter Template
           </label>
           <textarea
-            className="w-full h-screen px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full h-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             value={localSettings.newsletterTemplate}
             onChange={(e) =>
               setLocalSettings({ ...localSettings, newsletterTemplate: e.target.value })
             }
           />
         </div>
+      </div>
+
+      <div className="mt-8 flex justify-end">
+        <SaveButton />
       </div>
     </div>
   );
