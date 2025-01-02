@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchNewsletters, createNewsletter, updateNewsletter } from '@/lib/api';
+import { fetchNewsletters, createNewsletter, updateNewsletter, deleteNewsletter } from '@/lib/api';
 import type { Newsletter } from '@/lib/types';
 
 export function useNewsletters() {
@@ -25,10 +25,18 @@ export function useNewsletters() {
     }
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteNewsletter,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['newsletters'] });
+    }
+  });
+
   return {
     newsletters,
     isLoading,
     createNewsletter: createMutation.mutate,
-    updateNewsletter: updateMutation.mutate
+    updateNewsletter: updateMutation.mutate,
+    deleteNewsletter: deleteMutation.mutate
   };
 }

@@ -42,6 +42,15 @@ export async function updateNewsletter(id: string, newsletter: Partial<Newslette
   if (error) throw error;
 }
 
+export async function deleteNewsletter(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('newsletters')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
 export async function fetchNewsItems(sheetUrl: string): Promise<NewsItem[]> {
   const { data, error } = await supabase.functions.invoke('parse-sheet', {
     body: { url: sheetUrl }

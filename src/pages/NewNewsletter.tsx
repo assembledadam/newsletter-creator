@@ -38,6 +38,8 @@ export default function NewNewsletter() {
   };
 
   const handleGenerate = async (selectedItems: NewsItem[]) => {
+    if (!user) return;
+    
     setLoading(true);
     setError(null);
     try {
@@ -47,6 +49,17 @@ export default function NewNewsletter() {
         settings.newsletterTemplate
       );
       setContent(content);
+      
+      // Automatically save the newsletter when content is generated
+      const newsletter = {
+        title: `Newsletter ${new Date().toLocaleDateString()}`,
+        content,
+        source_url: '',
+        items: selectedItems,
+        user_id: user.id
+      };
+      
+      await createNewsletter(newsletter);
       setStep('edit');
     } catch (error) {
       console.error('Failed to generate newsletter:', error);
@@ -57,16 +70,6 @@ export default function NewNewsletter() {
   };
 
   const handleSave = () => {
-    if (!user) return;
-    
-    const newsletter = {
-      title: `Newsletter ${new Date().toLocaleDateString()}`,
-      content,
-      source_url: '',
-      items,
-      user_id: user.id
-    };
-    createNewsletter(newsletter);
     navigate('/');
   };
 

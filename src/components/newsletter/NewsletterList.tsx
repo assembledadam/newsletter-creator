@@ -1,4 +1,5 @@
 import { NewsletterCard } from './NewsletterCard';
+import { useNewsletters } from '@/lib/hooks/useNewsletters';
 import type { Newsletter } from '@/lib/types';
 
 interface Props {
@@ -6,6 +7,8 @@ interface Props {
 }
 
 export function NewsletterList({ newsletters }: Props) {
+  const { deleteNewsletter } = useNewsletters();
+
   if (newsletters.length === 0) {
     return (
       <div className="text-center py-12">
@@ -22,7 +25,11 @@ export function NewsletterList({ newsletters }: Props) {
   return (
     <div className="grid gap-4">
       {newsletters.map((newsletter) => (
-        <NewsletterCard key={newsletter.id} newsletter={newsletter} />
+        <NewsletterCard 
+          key={newsletter.id} 
+          newsletter={newsletter} 
+          onDelete={deleteNewsletter}
+        />
       ))}
     </div>
   );
