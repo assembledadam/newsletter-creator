@@ -10,11 +10,16 @@ export function formatDateTime(date: string | Date): string {
   return format(parsedDate, "d MMMM yyyy 'at' HH:mm");
 }
 
-export function getPreviousWeekDateRange(): string {
+export function getWeekDateRange(): string {
   const today = new Date();
-  const lastWeek = subWeeks(today, 1);
-  const start = startOfWeek(lastWeek, { weekStartsOn: 1 }); // Monday
-  const end = endOfWeek(lastWeek, { weekStartsOn: 1 }); // Sunday
+  const isSunday = today.getDay() === 0;
+  
+  // If it's Sunday, use the current week
+  // Otherwise, use the previous week
+  const targetWeek = isSunday ? today : subWeeks(today, 1);
+  
+  const start = startOfWeek(targetWeek, { weekStartsOn: 1 }); // Monday
+  const end = endOfWeek(targetWeek, { weekStartsOn: 1 }); // Sunday
   
   // If months are different
   if (format(start, 'MMM') !== format(end, 'MMM')) {
@@ -23,3 +28,6 @@ export function getPreviousWeekDateRange(): string {
   // If same month
   return `${format(start, 'd')}-${format(end, 'd')} ${format(end, 'MMM')}`;
 }
+
+// Keeping getPreviousWeekDateRange for backward compatibility
+export const getPreviousWeekDateRange = getWeekDateRange;

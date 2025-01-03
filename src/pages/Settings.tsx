@@ -1,5 +1,6 @@
 import { useSettings } from '@/lib/hooks/useSettings';
 import { Button } from '@/components/ui/button';
+import { Toast } from '@/components/ui/toast';
 import { Save, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import type { Settings as SettingsType } from '@/lib/types';
@@ -14,6 +15,7 @@ export default function Settings() {
   const { settings, updateSettings, isLoading } = useSettings();
   const [localSettings, setLocalSettings] = useState<SettingsType>(DEFAULT_SETTINGS);
   const [isSaving, setIsSaving] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -25,6 +27,7 @@ export default function Settings() {
     setIsSaving(true);
     try {
       await updateSettings(localSettings);
+      setShowToast(true);
     } finally {
       setIsSaving(false);
     }
@@ -64,7 +67,7 @@ export default function Settings() {
           </label>
           <input
             type="text"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors hover:border-gray-400"
             value={localSettings.defaultNewsletterTitle}
             onChange={(e) =>
               setLocalSettings({ ...localSettings, defaultNewsletterTitle: e.target.value })
@@ -81,7 +84,7 @@ export default function Settings() {
             GPT Prompt Template
           </label>
           <textarea
-            className="w-full h-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full h-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors hover:border-gray-400"
             value={localSettings.promptTemplate}
             onChange={(e) =>
               setLocalSettings({ ...localSettings, promptTemplate: e.target.value })
@@ -94,7 +97,7 @@ export default function Settings() {
             Newsletter Template
           </label>
           <textarea
-            className="w-full h-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full h-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors hover:border-gray-400"
             value={localSettings.newsletterTemplate}
             onChange={(e) =>
               setLocalSettings({ ...localSettings, newsletterTemplate: e.target.value })
@@ -102,6 +105,14 @@ export default function Settings() {
           />
         </div>
       </div>
+
+      {showToast && (
+        <Toast
+          message="Settings saved successfully"
+          type="success"
+          onClose={() => setShowToast(false)}
+        />
+      )}
     </div>
   );
 }
