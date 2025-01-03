@@ -9,6 +9,7 @@ import { SheetUrlInput } from '@/components/newsletter/SheetUrlInput';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { getPreviousWeekDateRange } from '@/lib/utils/date';
 import type { NewsItem } from '@/lib/types';
 
 export default function NewNewsletter() {
@@ -50,9 +51,13 @@ export default function NewNewsletter() {
       );
       setContent(content);
       
+      // Generate title with date range
+      const dateRange = getPreviousWeekDateRange();
+      const title = `${settings.defaultNewsletterTitle} (${dateRange})`;
+      
       // Automatically save the newsletter when content is generated
       const newsletter = {
-        title: `Newsletter ${new Date().toLocaleDateString()}`,
+        title,
         content,
         source_url: '',
         items: selectedItems,
@@ -91,7 +96,12 @@ export default function NewNewsletter() {
       {step === 'url' && <SheetUrlInput onSubmit={handleFetchItems} />}
       {step === 'select' && <NewsItemList items={items} onGenerate={handleGenerate} />}
       {step === 'edit' && (
-        <NewsletterEditor content={content} onChange={setContent} onSave={handleSave} />
+        <NewsletterEditor 
+          title={`${settings?.defaultNewsletterTitle} (${getPreviousWeekDateRange()})`}
+          content={content} 
+          onChange={setContent} 
+          onSave={handleSave} 
+        />
       )}
     </div>
   );

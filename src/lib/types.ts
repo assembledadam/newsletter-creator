@@ -20,4 +20,5 @@ export interface Newsletter {
 export interface Settings {
   promptTemplate: string;
   newsletterTemplate: string;
+  defaultNewsletterTitle: string;
 }

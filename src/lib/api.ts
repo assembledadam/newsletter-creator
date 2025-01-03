@@ -88,7 +88,8 @@ const DEFAULT_SETTINGS: Settings = {
 - [Bullet points summarizing main points]
 
 ---
-*Want to discuss how these changes might affect your R&D tax claims? Let's connect.*`
+*Want to discuss how these changes might affect your R&D tax claims? Let's connect.*`,
+  defaultNewsletterTitle: 'The Week In R&D Tax'
 };
 
 export async function fetchSettings(): Promise<Settings> {
@@ -110,8 +111,9 @@ export async function fetchSettings(): Promise<Settings> {
 
   // Map database fields to application fields
   return {
-    promptTemplate: data.prompt_template,
-    newsletterTemplate: data.newsletter_template
+    promptTemplate: data.prompt_template || DEFAULT_SETTINGS.promptTemplate,
+    newsletterTemplate: data.newsletter_template || DEFAULT_SETTINGS.newsletterTemplate,
+    defaultNewsletterTitle: data.default_newsletter_title || DEFAULT_SETTINGS.defaultNewsletterTitle
   };
 }
 

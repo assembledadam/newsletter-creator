@@ -34,6 +34,7 @@ export const useStore = create<AppState>()(
       settings: {
         promptTemplate: DEFAULT_PROMPT,
         newsletterTemplate: DEFAULT_TEMPLATE,
+        defaultNewsletterTitle: 'The Week In R&D Tax'
       },
       addNewsletter: (newsletter) =>
         set((state) => ({
