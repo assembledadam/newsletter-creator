@@ -3,6 +3,7 @@ import { useNewsletters } from '@/lib/hooks/useNewsletters';
 import { NewsletterEditor } from '@/components/newsletter/NewsletterEditor';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useEffect } from 'react';
 
 export default function EditNewsletter() {
   const { id } = useParams();
@@ -10,6 +11,17 @@ export default function EditNewsletter() {
   const { newsletters, updateNewsletter, isLoading } = useNewsletters();
   
   const newsletter = newsletters.find(n => n.id === id);
+
+  // Update page title when newsletter loads
+  useEffect(() => {
+    if (newsletter) {
+      document.title = `Edit Newsletter - ${newsletter.title}`;
+      // Clean up function to reset title when component unmounts
+      return () => {
+        document.title = 'R&D Newsletter Manager';
+      };
+    }
+  }, [newsletter]); // Only re-run when newsletter changes
   
   if (isLoading) {
     return (
@@ -52,6 +64,7 @@ export default function EditNewsletter() {
         </Button>
       </div>
       <NewsletterEditor
+        title={newsletter.title}
         content={newsletter.content}
         onChange={handleContentChange}
         onSave={handleSave}
