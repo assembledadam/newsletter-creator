@@ -126,7 +126,8 @@ export async function saveSettings(settings: Settings): Promise<void> {
     .upsert({
       user_id: user.user.id,
       prompt_template: settings.promptTemplate,
-      newsletter_template: settings.newsletterTemplate
+      newsletter_template: settings.newsletterTemplate,
+      default_newsletter_title: settings.defaultNewsletterTitle
     });
 
   if (upsertError) throw upsertError;
