@@ -53,6 +53,13 @@ export function ContentCurationList({
     }
   };
 
+  const handleDeleteSingle = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this item?')) {
+      onDelete([id]);
+    }
+  };
+
   // Get unique sources for filter dropdown
   const sources = Array.from(new Set(items.map(item => item.source))).sort();
 
@@ -180,6 +187,13 @@ export function ContentCurationList({
                     )}
                     <span>•</span>
                     <span>{formatRelativeTime(item.content_date)}</span>
+                    <button
+                      onClick={(e) => handleDeleteSingle(item.id, e)}
+                      disabled={isGenerating || isDeleting}
+                      className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 -my-1 disabled:opacity-50 disabled:pointer-events-none"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>
