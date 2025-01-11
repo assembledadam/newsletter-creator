@@ -13,6 +13,7 @@ interface Props {
   onToggleSelect: (id: string, selected: boolean) => void;
   onDelete: (ids: string[]) => void;
   isDeleting?: boolean;
+  isGenerating?: boolean;
 }
 
 export function ContentCurationList({ 
@@ -21,7 +22,8 @@ export function ContentCurationList({
   onSourceFilterChange, 
   onToggleSelect, 
   onDelete,
-  isDeleting = false
+  isDeleting = false,
+  isGenerating = false
 }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -48,7 +50,6 @@ export function ContentCurationList({
   const handleDelete = () => {
     if (selectedIds.size > 0) {
       onDelete(Array.from(selectedIds));
-      setSelectedIds(new Set()); // Clear selection after delete
     }
   };
 
@@ -63,6 +64,7 @@ export function ContentCurationList({
             value={sourceFilter}
             onChange={(e) => onSourceFilterChange(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            disabled={isGenerating}
           >
             <option value="">All Sources</option>
             {sources.map(source => (
@@ -78,7 +80,7 @@ export function ContentCurationList({
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={isDeleting}
+            disabled={isDeleting || isGenerating}
             className="flex items-center gap-2"
           >
             {isDeleting ? (
@@ -96,13 +98,14 @@ export function ContentCurationList({
         )}
       </div>
 
-      <div className="bg-white rounded-lg shadow">
+      <div className={`bg-white rounded-lg shadow transition-opacity ${isGenerating ? 'opacity-50' : ''}`}>
         <div className="border-b border-gray-200 px-4 py-3">
           <div className="flex items-center">
             <Checkbox
               checked={selectedIds.size === items.length}
               onCheckedChange={toggleSelectAll}
               className="mr-3"
+              disabled={isGenerating}
             />
             <span className="text-sm font-medium text-gray-700">
               {selectedIds.size} selected
@@ -114,14 +117,15 @@ export function ContentCurationList({
           {items.map((item) => (
             <div
               key={item.id}
-              className="p-4 hover:bg-gray-50 cursor-pointer"
-              onClick={() => toggleItem(item.id)}
+              className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${isGenerating ? 'pointer-events-none' : ''}`}
+              onClick={() => !isGenerating && toggleItem(item.id)}
             >
               <div className="flex items-start gap-3">
                 <Checkbox
                   checked={selectedIds.has(item.id)}
                   onCheckedChange={() => toggleItem(item.id)}
                   className="mt-1"
+                  disabled={isGenerating}
                 />
                 <div className="flex-1">
                   <div className="flex items-start justify-between">
@@ -152,6 +156,7 @@ export function ContentCurationList({
                         e.stopPropagation();
                         onToggleSelect(item.id, !item.selected);
                       }}
+                      disabled={isGenerating}
                       className={item.selected ? 'text-green-600' : 'text-gray-400'}
                     >
                       {item.selected ? 'Selected' : 'Select'}
