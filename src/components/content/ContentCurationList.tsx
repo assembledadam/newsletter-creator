@@ -117,17 +117,25 @@ export function ContentCurationList({
           {items.map((item) => (
             <div
               key={item.id}
-              className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${isGenerating ? 'pointer-events-none' : ''}`}
-              onClick={() => !isGenerating && toggleItem(item.id)}
+              className={`p-4 transition-colors ${
+                item.selected ? 'bg-green-50' : 'hover:bg-gray-50'
+              } ${isGenerating ? 'pointer-events-none' : ''}`}
             >
               <div className="flex items-start gap-3">
-                <Checkbox
-                  checked={selectedIds.has(item.id)}
-                  onCheckedChange={() => toggleItem(item.id)}
+                <div 
                   className="mt-1"
-                  disabled={isGenerating}
-                />
-                <div className="flex-1">
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Checkbox
+                    checked={selectedIds.has(item.id)}
+                    onCheckedChange={() => toggleItem(item.id)}
+                    disabled={isGenerating}
+                  />
+                </div>
+                <div 
+                  className="flex-1 cursor-pointer"
+                  onClick={() => !isGenerating && onToggleSelect(item.id, !item.selected)}
+                >
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="font-medium text-gray-900">
