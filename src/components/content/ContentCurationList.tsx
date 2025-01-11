@@ -160,6 +160,11 @@ export function ContentCurationList({
                         ) : (
                           item.title
                         )}
+                        {item.source === 'google' && item.metadata?.domain && (
+                          <span className="ml-2 text-sm text-gray-500">
+                            ({item.metadata.domain})
+                          </span>
+                        )}
                       </div>
                       <div 
                         className="text-sm text-gray-600 mt-1 prose prose-sm max-w-none"

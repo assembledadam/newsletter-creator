@@ -7,6 +7,7 @@ import { LoadingOverlay } from '@/components/ui/loading-overlay';
 import { fetchContentSources, updateContentSourceSelection, deleteContentSources, generateNewsletterFromSources } from '@/lib/api';
 import { FileText, Loader2 } from 'lucide-react';
 import { Toast } from '@/components/ui/toast';
+import type { ContentSource } from '@/lib/types';
 
 export default function ContentCuration() {
   const navigate = useNavigate();
@@ -25,12 +26,35 @@ export default function ContentCuration() {
   const toggleSelection = useMutation({
     mutationFn: ({ id, selected }: { id: string; selected: boolean }) =>
       updateContentSourceSelection(id, selected),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['content-sources'] });
+    onMutate: async ({ id, selected }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['content-sources'] });
+
+      // Snapshot the previous value
+      const previousItems = queryClient.getQueryData<ContentSource[]>(['content-sources', sourceFilter]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData<ContentSource[]>(['content-sources', sourceFilter], old => {
+        return old?.map(item =>
+          item.id === id ? { ...item, selected } : item
+        ) ?? [];
+      });
+
+      return { previousItems };
     },
-    onError: (error) => {
-      console.error('Failed to update selection:', error);
+    onError: (err, variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousItems) {
+        queryClient.setQueryData(['content-sources', sourceFilter], context.previousItems);
+      }
       showToastMessage('Failed to update selection', 'error');
+    },
+    onSuccess: () => {
+      showToastMessage('Selection updated', 'success');
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure we're up to date
+      queryClient.invalidateQueries({ queryKey: ['content-sources'] });
     }
   });
 
@@ -49,11 +73,9 @@ export default function ContentCuration() {
   const generateNewsletter = useMutation({
     mutationFn: generateNewsletterFromSources,
     onMutate: () => {
-      console.log('Starting newsletter generation...');
       setIsGenerating(true);
     },
     onSuccess: (newsletter) => {
-      console.log('Newsletter generated successfully:', newsletter);
       queryClient.invalidateQueries({ queryKey: ['newsletters'] });
       queryClient.invalidateQueries({ queryKey: ['content-sources'] });
       showToastMessage('Newsletter generated successfully', 'success');
@@ -64,19 +86,9 @@ export default function ContentCuration() {
       showToastMessage('Failed to generate newsletter. Please try again.', 'error');
     },
     onSettled: () => {
-      console.log('Newsletter generation completed');
       setIsGenerating(false);
     }
   });
-
-  // Debug effect to monitor state changes
-  useEffect(() => {
-    console.log('Generation state:', {
-      isGenerating,
-      mutationState: generateNewsletter.status,
-      isLoading: generateNewsletter.isLoading
-    });
-  }, [isGenerating, generateNewsletter.status, generateNewsletter.isLoading]);
 
   const showToastMessage = (message: string, type: 'success' | 'error') => {
     setToastMessage(message);
@@ -85,7 +97,6 @@ export default function ContentCuration() {
   };
 
   const handleGenerateNewsletter = () => {
-    console.log('Generate button clicked');
     const selectedCount = items.filter(item => item.selected).length;
     if (selectedCount === 0) {
       showToastMessage('Please select at least one item', 'error');
@@ -138,7 +149,9 @@ export default function ContentCuration() {
           items={items}
           sourceFilter={sourceFilter}
           onSourceFilterChange={setSourceFilter}
-          onToggleSelect={(id, selected) => toggleSelection.mutate({ id, selected })}
+          onToggleSelect={(id, selected) => {
+            toggleSelection.mutate({ id, selected });
+          }}
           onDelete={(ids) => {
             if (ids.length > 0) {
               deleteItems.mutate(ids);
