@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { signOut } from '@/lib/auth';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings, Database } from 'lucide-react';
 
 export function Navigation() {
   const navigate = useNavigate();
@@ -24,6 +24,12 @@ export function Navigation() {
             <h1 className="text-xl font-bold">R&D Newsletter Manager</h1>
           </Link>
           <div className="flex items-center space-x-4">
+            <Link to="/content">
+              <Button variant="ghost">
+                <Database className="w-4 h-4 mr-2" />
+                Content
+              </Button>
+            </Link>
             <Link to="/settings">
               <Button variant="ghost">
                 <Settings className="w-4 h-4 mr-2" />

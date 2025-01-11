@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import NewNewsletter from './pages/NewNewsletter';
 import EditNewsletter from './pages/EditNewsletter';
+import ContentCuration from './pages/ContentCuration';
 import Auth from './pages/Auth';
 
 const queryClient = new QueryClient();
@@ -34,6 +35,16 @@ function App() {
                   <Navigation />
                   <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <Settings />
+                  </main>
+                </div>
+              </ProtectedRoute>
+            } />
+            <Route path="/content" element={
+              <ProtectedRoute>
+                <div className="min-h-screen bg-gray-50">
+                  <Navigation />
+                  <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <ContentCuration />
                   </main>
                 </div>
               </ProtectedRoute>

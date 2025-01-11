@@ -22,3 +22,17 @@ export interface Settings {
   newsletterTemplate: string;
   defaultNewsletterTitle: string;
 }
+
+export interface ContentSource {
+  id: string;
+  content_date: string;
+  source: string;
+  title: string;
+  description: string | null;
+  author: string | null;
+  url: string | null;
+  metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+  selected: boolean;
+}
