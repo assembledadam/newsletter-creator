@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, Filter } from 'lucide-react';
+import { Trash2, Filter, Loader2 } from 'lucide-react';
 import { formatSourceType } from '@/lib/utils/formatters';
 import { formatRelativeTime } from '@/lib/utils/date';
 import type { ContentSource } from '@/lib/types';
@@ -12,6 +12,7 @@ interface Props {
   onSourceFilterChange: (source: string) => void;
   onToggleSelect: (id: string, selected: boolean) => void;
   onDelete: (ids: string[]) => void;
+  isDeleting?: boolean;
 }
 
 export function ContentCurationList({ 
@@ -19,7 +20,8 @@ export function ContentCurationList({
   sourceFilter, 
   onSourceFilterChange, 
   onToggleSelect, 
-  onDelete 
+  onDelete,
+  isDeleting = false
 }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -46,7 +48,7 @@ export function ContentCurationList({
   const handleDelete = () => {
     if (selectedIds.size > 0) {
       onDelete(Array.from(selectedIds));
-      setSelectedIds(new Set());
+      setSelectedIds(new Set()); // Clear selection after delete
     }
   };
 
@@ -76,10 +78,20 @@ export function ContentCurationList({
           <Button
             variant="destructive"
             onClick={handleDelete}
+            disabled={isDeleting}
             className="flex items-center gap-2"
           >
-            <Trash2 className="w-4 h-4" />
-            Delete Selected ({selectedIds.size})
+            {isDeleting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4" />
+                Delete Selected ({selectedIds.size})
+              </>
+            )}
           </Button>
         )}
       </div>

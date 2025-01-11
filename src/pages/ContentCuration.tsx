@@ -25,6 +25,10 @@ export default function ContentCuration() {
       updateContentSourceSelection(id, selected),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content-sources'] });
+    },
+    onError: (error) => {
+      console.error('Failed to update selection:', error);
+      showToastMessage('Failed to update selection', 'error');
     }
   });
 
@@ -33,6 +37,10 @@ export default function ContentCuration() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content-sources'] });
       showToastMessage('Items deleted successfully', 'success');
+    },
+    onError: (error) => {
+      console.error('Failed to delete items:', error);
+      showToastMessage('Failed to delete items', 'error');
     }
   });
 
@@ -95,7 +103,12 @@ export default function ContentCuration() {
         sourceFilter={sourceFilter}
         onSourceFilterChange={setSourceFilter}
         onToggleSelect={(id, selected) => toggleSelection.mutate({ id, selected })}
-        onDelete={(ids) => deleteItems.mutate(ids)}
+        onDelete={(ids) => {
+          if (ids.length > 0) {
+            deleteItems.mutate(ids);
+          }
+        }}
+        isDeleting={deleteItems.isLoading}
       />
 
       {showToast && (
