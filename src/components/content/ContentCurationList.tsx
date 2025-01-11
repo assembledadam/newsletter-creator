@@ -4,6 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Trash2, Filter, Loader2 } from 'lucide-react';
 import { formatSourceType } from '@/lib/utils/formatters';
 import { formatRelativeTime } from '@/lib/utils/date';
+import { marked } from 'marked';
 import type { ContentSource } from '@/lib/types';
 
 interface Props {
@@ -160,9 +161,12 @@ export function ContentCurationList({
                           item.title
                         )}
                       </div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        {item.description}
-                      </div>
+                      <div 
+                        className="text-sm text-gray-600 mt-1 prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ 
+                          __html: marked(item.description || '', { breaks: true }) 
+                        }}
+                      />
                     </div>
                     <Button
                       variant="ghost"
