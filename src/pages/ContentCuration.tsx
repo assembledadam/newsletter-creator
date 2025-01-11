@@ -38,13 +38,14 @@ export default function ContentCuration() {
 
   const generateNewsletter = useMutation({
     mutationFn: generateNewsletterFromSources,
-    onSuccess: async (data) => {
-      // Create a new newsletter with the generated content
-      // ... (implement this based on your newsletter creation logic)
+    onSuccess: async (newsletter) => {
+      queryClient.invalidateQueries({ queryKey: ['newsletters'] });
+      queryClient.invalidateQueries({ queryKey: ['content-sources'] });
       showToastMessage('Newsletter generated successfully', 'success');
-      navigate('/');
+      navigate(`/edit/${newsletter.id}`);
     },
     onError: (error) => {
+      console.error('Failed to generate newsletter:', error);
       showToastMessage('Failed to generate newsletter', 'error');
     }
   });
@@ -74,8 +75,17 @@ export default function ContentCuration() {
             onClick={() => generateNewsletter.mutate()}
             disabled={generateNewsletter.isLoading}
           >
-            <FileText className="w-4 h-4 mr-2" />
-            Generate Newsletter ({selectedCount})
+            {generateNewsletter.isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <FileText className="w-4 h-4 mr-2" />
+                Generate Newsletter ({selectedCount})
+              </>
+            )}
           </Button>
         )}
       </div>
