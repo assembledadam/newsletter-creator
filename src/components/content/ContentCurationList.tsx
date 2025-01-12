@@ -28,18 +28,19 @@ export function ContentCurationList({
   isDeleting = false,
   isGenerating = false
 }: Props) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedForDeletion, setSelectedForDeletion] = useState<Set<string>>(new Set());
 
   const toggleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(new Set(items.map(item => item.id)));
+      setSelectedForDeletion(new Set(items.map(item => item.id)));
     } else {
-      setSelectedIds(new Set());
+      setSelectedForDeletion(new Set());
     }
   };
 
-  const toggleItem = (id: string) => {
-    setSelectedIds(prev => {
+  const toggleForDeletion = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    setSelectedForDeletion(prev => {
       const newSet = new Set(prev);
       if (newSet.has(id)) {
         newSet.delete(id);
@@ -51,9 +52,9 @@ export function ContentCurationList({
   };
 
   const handleDelete = () => {
-    if (selectedIds.size > 0) {
-      onDelete(Array.from(selectedIds));
-      setSelectedIds(new Set()); // Clear selection after delete
+    if (selectedForDeletion.size > 0) {
+      onDelete(Array.from(selectedForDeletion));
+      setSelectedForDeletion(new Set()); // Clear selection after delete
     }
   };
 
@@ -61,7 +62,7 @@ export function ContentCurationList({
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this item?')) {
       onDelete([id]);
-      setSelectedIds(prev => {
+      setSelectedForDeletion(prev => {
         const newSet = new Set(prev);
         newSet.delete(id);
         return newSet;
@@ -89,7 +90,7 @@ export function ContentCurationList({
           <Filter className="w-4 h-4 text-gray-500" />
         </div>
         
-        {selectedIds.size > 0 && (
+        {selectedForDeletion.size > 0 && (
           <Button
             variant="destructive"
             onClick={handleDelete}
@@ -104,7 +105,7 @@ export function ContentCurationList({
             ) : (
               <>
                 <Trash2 className="w-4 h-4" />
-                Delete Selected ({selectedIds.size})
+                Delete Selected ({selectedForDeletion.size})
               </>
             )}
           </Button>
@@ -115,12 +116,13 @@ export function ContentCurationList({
         <div className="border-b border-gray-200 px-4 py-3">
           <div className="flex items-center">
             <Checkbox
-              checked={items.length > 0 && selectedIds.size === items.length}
+              checked={items.length > 0 && selectedForDeletion.size === items.length}
               onCheckedChange={toggleSelectAll}
               className="mr-3"
+              onClick={(e) => e.stopPropagation()}
             />
             <span className="text-sm font-medium text-gray-700">
-              {selectedIds.size} selected
+              {selectedForDeletion.size} selected for deletion
             </span>
           </div>
         </div>
@@ -130,13 +132,14 @@ export function ContentCurationList({
             <div
               key={item.id}
               className="p-4 hover:bg-gray-50 cursor-pointer"
-              onClick={() => toggleItem(item.id)}
+              onClick={() => onToggleSelect(item.id, !item.selected)}
             >
               <div className="flex items-start gap-3">
                 <Checkbox
-                  checked={selectedIds.has(item.id)}
-                  onCheckedChange={() => toggleItem(item.id)}
+                  checked={selectedForDeletion.has(item.id)}
+                  onCheckedChange={() => toggleForDeletion(item.id, { stopPropagation: () => {} } as React.MouseEvent)}
                   className="mt-1"
+                  onClick={(e) => e.stopPropagation()}
                 />
                 <div className="flex-1">
                   <div className="flex items-start justify-between">
