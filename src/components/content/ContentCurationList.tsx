@@ -10,6 +10,7 @@ import type { ContentSource } from '@/lib/types';
 interface Props {
   items: ContentSource[];
   sourceFilter: string;
+  availableSources: string[];
   onSourceFilterChange: (source: string) => void;
   onToggleSelect: (id: string, selected: boolean) => void;
   onDelete: (ids: string[]) => void;
@@ -19,7 +20,8 @@ interface Props {
 
 export function ContentCurationList({ 
   items, 
-  sourceFilter, 
+  sourceFilter,
+  availableSources,
   onSourceFilterChange, 
   onToggleSelect, 
   onDelete,
@@ -51,6 +53,7 @@ export function ContentCurationList({
   const handleDelete = () => {
     if (selectedIds.size > 0) {
       onDelete(Array.from(selectedIds));
+      setSelectedIds(new Set()); // Clear selection after delete
     }
   };
 
@@ -58,11 +61,13 @@ export function ContentCurationList({
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this item?')) {
       onDelete([id]);
+      setSelectedIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
     }
   };
-
-  // Get unique sources for filter dropdown
-  const sources = Array.from(new Set(items.map(item => item.source))).sort();
 
   return (
     <div className="space-y-4">
@@ -75,7 +80,7 @@ export function ContentCurationList({
             disabled={isGenerating}
           >
             <option value="">All Sources</option>
-            {sources.map(source => (
+            {availableSources.map(source => (
               <option key={source} value={source}>
                 {formatSourceType(source)}
               </option>
@@ -110,10 +115,9 @@ export function ContentCurationList({
         <div className="border-b border-gray-200 px-4 py-3">
           <div className="flex items-center">
             <Checkbox
-              checked={selectedIds.size === items.length}
+              checked={items.length > 0 && selectedIds.size === items.length}
               onCheckedChange={toggleSelectAll}
               className="mr-3"
-              disabled={isGenerating}
             />
             <span className="text-sm font-medium text-gray-700">
               {selectedIds.size} selected
@@ -125,27 +129,18 @@ export function ContentCurationList({
           {items.map((item) => (
             <div
               key={item.id}
-              className={`p-4 transition-colors ${
-                item.selected ? 'bg-green-50' : 'hover:bg-gray-50'
-              } ${isGenerating ? 'pointer-events-none' : ''}`}
+              className="p-4 hover:bg-gray-50 cursor-pointer"
+              onClick={() => toggleItem(item.id)}
             >
               <div className="flex items-start gap-3">
-                <div 
+                <Checkbox
+                  checked={selectedIds.has(item.id)}
+                  onCheckedChange={() => toggleItem(item.id)}
                   className="mt-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Checkbox
-                    checked={selectedIds.has(item.id)}
-                    onCheckedChange={() => toggleItem(item.id)}
-                    disabled={isGenerating}
-                  />
-                </div>
-                <div 
-                  className="flex-1 cursor-pointer"
-                  onClick={() => !isGenerating && onToggleSelect(item.id, !item.selected)}
-                >
+                />
+                <div className="flex-1">
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <div className="font-medium text-gray-900">
                         {item.url ? (
                           <a
@@ -156,35 +151,51 @@ export function ContentCurationList({
                             onClick={(e) => e.stopPropagation()}
                           >
                             {item.title}
+                            {item.source === 'google' && item.metadata?.domain && (
+                              <span className="ml-2 text-sm text-gray-500">
+                                ({item.metadata.domain})
+                              </span>
+                            )}
                           </a>
                         ) : (
-                          item.title
-                        )}
-                        {item.source === 'google' && item.metadata?.domain && (
-                          <span className="ml-2 text-sm text-gray-500">
-                            ({item.metadata.domain})
+                          <span>
+                            {item.title}
+                            {item.source === 'google' && item.metadata?.domain && (
+                              <span className="ml-2 text-sm text-gray-500">
+                                ({item.metadata.domain})
+                              </span>
+                            )}
                           </span>
                         )}
                       </div>
                       <div 
-                        className="text-sm text-gray-600 mt-1 prose prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{ 
-                          __html: marked(item.description || '', { breaks: true }) 
-                        }}
+                        className="text-sm text-gray-500 mt-1 prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: marked(item.description || '') }}
                       />
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleSelect(item.id, !item.selected);
-                      }}
-                      disabled={isGenerating}
-                      className={item.selected ? 'text-green-600' : 'text-gray-400'}
-                    >
-                      {item.selected ? 'Selected' : 'Select'}
-                    </Button>
+                    <div className="flex items-center gap-2 ml-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleSelect(item.id, !item.selected);
+                        }}
+                        className={item.selected ? 'text-green-600' : 'text-gray-400'}
+                        disabled={isGenerating}
+                      >
+                        {item.selected ? 'Selected' : 'Select'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => handleDeleteSingle(item.id, e)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        disabled={isGenerating}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
                     <span className="font-medium">{formatSourceType(item.source)}</span>
@@ -196,13 +207,6 @@ export function ContentCurationList({
                     )}
                     <span>•</span>
                     <span>{formatRelativeTime(item.content_date)}</span>
-                    <button
-                      onClick={(e) => handleDeleteSingle(item.id, e)}
-                      disabled={isGenerating || isDeleting}
-                      className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 -my-1 disabled:opacity-50 disabled:pointer-events-none"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
               </div>

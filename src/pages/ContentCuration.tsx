@@ -18,34 +18,43 @@ export default function ContentCuration() {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: ['content-sources', sourceFilter],
-    queryFn: () => fetchContentSources(sourceFilter || undefined)
+  // Fetch all items in a single query
+  const { data: allItems = [], isLoading } = useQuery({
+    queryKey: ['content-sources'],
+    queryFn: () => fetchContentSources()
   });
+
+  // Filter items in memory
+  const items = sourceFilter 
+    ? allItems.filter(item => item.source === sourceFilter)
+    : allItems;
+
+  // Get unique sources from all items
+  const availableSources = Array.from(new Set(allItems.map(item => item.source))).sort();
+
+  // Reset source filter if there are no items for the current filter
+  useEffect(() => {
+    if (sourceFilter && items.length === 0) {
+      setSourceFilter('');
+    }
+  }, [items.length, sourceFilter]);
 
   const toggleSelection = useMutation({
     mutationFn: ({ id, selected }: { id: string; selected: boolean }) =>
       updateContentSourceSelection(id, selected),
     onMutate: async ({ id, selected }) => {
-      // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['content-sources'] });
-
-      // Snapshot the previous value
-      const previousItems = queryClient.getQueryData<ContentSource[]>(['content-sources', sourceFilter]);
-
-      // Optimistically update to the new value
-      queryClient.setQueryData<ContentSource[]>(['content-sources', sourceFilter], old => {
+      const previousItems = queryClient.getQueryData<ContentSource[]>(['content-sources']);
+      queryClient.setQueryData<ContentSource[]>(['content-sources'], old => {
         return old?.map(item =>
           item.id === id ? { ...item, selected } : item
         ) ?? [];
       });
-
       return { previousItems };
     },
     onError: (err, variables, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
       if (context?.previousItems) {
-        queryClient.setQueryData(['content-sources', sourceFilter], context.previousItems);
+        queryClient.setQueryData(['content-sources'], context.previousItems);
       }
       showToastMessage('Failed to update selection', 'error');
     },
@@ -53,20 +62,32 @@ export default function ContentCuration() {
       showToastMessage('Selection updated', 'success');
     },
     onSettled: () => {
-      // Always refetch after error or success to ensure we're up to date
       queryClient.invalidateQueries({ queryKey: ['content-sources'] });
     }
   });
 
   const deleteItems = useMutation({
     mutationFn: deleteContentSources,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['content-sources'] });
-      showToastMessage('Items deleted successfully', 'success');
+    onMutate: async (itemIds) => {
+      await queryClient.cancelQueries({ queryKey: ['content-sources'] });
+      const previousItems = queryClient.getQueryData<ContentSource[]>(['content-sources']);
+      queryClient.setQueryData<ContentSource[]>(['content-sources'], old => {
+        return old?.filter(item => !itemIds.includes(item.id)) ?? [];
+      });
+      return { previousItems };
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      if (context?.previousItems) {
+        queryClient.setQueryData(['content-sources'], context.previousItems);
+      }
       console.error('Failed to delete items:', error);
       showToastMessage('Failed to delete items', 'error');
+    },
+    onSuccess: () => {
+      showToastMessage('Items deleted successfully', 'success');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['content-sources'] });
     }
   });
 
@@ -148,6 +169,7 @@ export default function ContentCuration() {
         <ContentCurationList
           items={items}
           sourceFilter={sourceFilter}
+          availableSources={availableSources}
           onSourceFilterChange={setSourceFilter}
           onToggleSelect={(id, selected) => {
             toggleSelection.mutate({ id, selected });
