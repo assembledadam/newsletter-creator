@@ -115,7 +115,7 @@ export async function fetchContentSources(source?: string): Promise<ContentSourc
   let query = supabase
     .from('content_sources')
     .select('*')
-    .order('content_date', { ascending: false });
+    .order('content_date', { ascending: true }); // Changed to ascending order
 
   if (source) {
     query = query.eq('source', source);
@@ -156,7 +156,8 @@ export async function generateNewsletterFromSources(): Promise<Newsletter> {
   const { data: selectedItems, error: fetchError } = await supabase
     .from('content_sources')
     .select('*')
-    .eq('selected', true);
+    .eq('selected', true)
+    .order('content_date', { ascending: true }); // Ensure selected items are also ordered
 
   if (fetchError) throw fetchError;
 
@@ -168,7 +169,6 @@ export async function generateNewsletterFromSources(): Promise<Newsletter> {
     url: item.url || '',
     selected: true
   }));
-  
 
   // Get user settings
   const settings = await fetchSettings();
@@ -202,14 +202,6 @@ export async function generateNewsletterFromSources(): Promise<Newsletter> {
   if (resetError) throw resetError;
 
   return newsletter;
-}
-
-export async function fetchNewsItems(sheetUrl: string): Promise<NewsItem[]> {
-  const { data, error } = await supabase.functions.invoke('parse-sheet', {
-    body: { url: sheetUrl }
-  });
-  if (error) throw error;
-  return data;
 }
 
 export async function generateNewsletterContent(

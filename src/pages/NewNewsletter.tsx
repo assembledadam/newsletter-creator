@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNewsletters } from '@/lib/hooks/useNewsletters';
 import { useSettings } from '@/lib/hooks/useSettings';
-import { fetchNewsItems, generateNewsletterContent } from '@/lib/api';
+import { generateNewsletterContent } from '@/lib/api';
 import { NewsItemList } from '@/components/newsletter/NewsItemList';
 import { NewsletterEditor } from '@/components/newsletter/NewsletterEditor';
 import { SheetUrlInput } from '@/components/newsletter/SheetUrlInput';
@@ -27,8 +27,21 @@ export default function NewNewsletter() {
     setLoading(true);
     setError(null);
     try {
-      const newsItems = await fetchNewsItems(url);
-      setItems(newsItems.map(item => ({ ...item, selected: false })));
+      // Call the parse-sheet function directly
+      const response = await fetch('/.netlify/functions/parse-sheet', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch items from the Google Sheet');
+      }
+
+      const newsItems = await response.json();
+      setItems(newsItems.map((item: NewsItem) => ({ ...item, selected: false })));
       setStep('select');
     } catch (error) {
       console.error('Failed to fetch items:', error);
