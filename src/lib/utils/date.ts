@@ -12,11 +12,11 @@ export function formatDateTime(date: string | Date): string {
 
 export function getWeekDateRange(): string {
   const today = new Date();
-  const isSunday = today.getDay() === 0;
+  const dayOfWeek = today.getDay();
   
-  // If it's Sunday, use the current week
-  // Otherwise, use the previous week
-  const targetWeek = isSunday ? today : subWeeks(today, 1);
+  // Use current week for Saturday (6) or Sunday (0)
+  // Use previous week for all other days
+  const targetWeek = (dayOfWeek === 6 || dayOfWeek === 0) ? today : subWeeks(today, 1);
   
   const start = startOfWeek(targetWeek, { weekStartsOn: 1 }); // Monday
   const end = endOfWeek(targetWeek, { weekStartsOn: 1 }); // Sunday

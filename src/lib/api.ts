@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { Newsletter, NewsItem, Settings, ContentSource } from './types';
+import { getWeekDateRange } from './utils/date';
 
 const DEFAULT_SETTINGS: Settings = {
   promptTemplate: `You are an expert in R&D tax relief. Create a professional newsletter summarizing the following R&D tax news items. Use a conversational yet professional tone. Focus on the implications for tax advisors and accountants. Include a brief introduction paragraph before the main content. Format the content using markdown.`,
@@ -184,9 +185,13 @@ export async function generateNewsletterFromSources(): Promise<Newsletter> {
 
   if (error) throw error;
 
+  // Generate title with date range
+  const dateRange = getWeekDateRange();
+  const title = `${settings.defaultNewsletterTitle} (${dateRange})`;
+
   // Create the newsletter
   const newsletter = await createNewsletter({
-    title: settings.defaultNewsletterTitle,
+    title,
     content: data.content,
     items,
     source_url: null,

@@ -131,7 +131,11 @@ export function ContentCurationList({
           {items.map((item) => (
             <div
               key={item.id}
-              className="p-4 hover:bg-gray-50 cursor-pointer"
+              className={`p-4 cursor-pointer transition-colors ${
+                item.selected 
+                  ? 'bg-green-50 hover:bg-green-100' 
+                  : 'hover:bg-gray-50'
+              }`}
               onClick={() => onToggleSelect(item.id, !item.selected)}
             >
               <div className="flex items-start gap-3">

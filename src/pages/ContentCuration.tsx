@@ -21,16 +21,25 @@ export default function ContentCuration() {
   // Fetch all items in a single query
   const { data: allItems = [], isLoading } = useQuery({
     queryKey: ['content-sources'],
-    queryFn: () => fetchContentSources()
+    queryFn: () => fetchContentSources(),
+    select: (data) => {
+      // Sort items by content_date ascending
+      return [...data].sort((a, b) => 
+        new Date(a.content_date).getTime() - new Date(b.content_date).getTime()
+      );
+    }
   });
 
-  // Filter items in memory
+  // Filter items in memory while maintaining sort order
   const items = sourceFilter 
     ? allItems.filter(item => item.source === sourceFilter)
     : allItems;
 
   // Get unique sources from all items
   const availableSources = Array.from(new Set(allItems.map(item => item.source))).sort();
+
+  // Calculate selected count
+  const selectedCount = items.filter(item => item.selected).length;
 
   // Reset source filter if there are no items for the current filter
   useEffect(() => {
@@ -39,17 +48,27 @@ export default function ContentCuration() {
     }
   }, [items.length, sourceFilter]);
 
+  const showToastMessage = (message: string, type: 'success' | 'error') => {
+    setToastMessage(message);
+    setToastType(type);
+    setShowToast(true);
+  };
+
   const toggleSelection = useMutation({
     mutationFn: ({ id, selected }: { id: string; selected: boolean }) =>
       updateContentSourceSelection(id, selected),
     onMutate: async ({ id, selected }) => {
       await queryClient.cancelQueries({ queryKey: ['content-sources'] });
       const previousItems = queryClient.getQueryData<ContentSource[]>(['content-sources']);
+      
+      // Update the cache optimistically while maintaining sort order
       queryClient.setQueryData<ContentSource[]>(['content-sources'], old => {
-        return old?.map(item =>
+        if (!old) return [];
+        return old.map(item => 
           item.id === id ? { ...item, selected } : item
-        ) ?? [];
+        );
       });
+      
       return { previousItems };
     },
     onError: (err, variables, context) => {
@@ -58,9 +77,6 @@ export default function ContentCuration() {
       }
       showToastMessage('Failed to update selection', 'error');
     },
-    onSuccess: () => {
-      showToastMessage('Selection updated', 'success');
-    },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['content-sources'] });
     }
@@ -68,61 +84,29 @@ export default function ContentCuration() {
 
   const deleteItems = useMutation({
     mutationFn: deleteContentSources,
-    onMutate: async (itemIds) => {
-      await queryClient.cancelQueries({ queryKey: ['content-sources'] });
-      const previousItems = queryClient.getQueryData<ContentSource[]>(['content-sources']);
-      queryClient.setQueryData<ContentSource[]>(['content-sources'], old => {
-        return old?.filter(item => !itemIds.includes(item.id)) ?? [];
-      });
-      return { previousItems };
-    },
-    onError: (error, variables, context) => {
-      if (context?.previousItems) {
-        queryClient.setQueryData(['content-sources'], context.previousItems);
-      }
-      console.error('Failed to delete items:', error);
-      showToastMessage('Failed to delete items', 'error');
-    },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['content-sources'] });
       showToastMessage('Items deleted successfully', 'success');
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['content-sources'] });
+    onError: () => {
+      showToastMessage('Failed to delete items', 'error');
     }
   });
 
   const generateNewsletter = useMutation({
     mutationFn: generateNewsletterFromSources,
-    onMutate: () => {
-      setIsGenerating(true);
-    },
     onSuccess: (newsletter) => {
-      queryClient.invalidateQueries({ queryKey: ['newsletters'] });
       queryClient.invalidateQueries({ queryKey: ['content-sources'] });
-      showToastMessage('Newsletter generated successfully', 'success');
       navigate(`/edit/${newsletter.id}`);
     },
-    onError: (error) => {
-      console.error('Failed to generate newsletter:', error);
-      showToastMessage('Failed to generate newsletter. Please try again.', 'error');
-    },
-    onSettled: () => {
+    onError: () => {
+      showToastMessage('Failed to generate newsletter', 'error');
       setIsGenerating(false);
     }
   });
 
-  const showToastMessage = (message: string, type: 'success' | 'error') => {
-    setToastMessage(message);
-    setToastType(type);
-    setShowToast(true);
-  };
-
-  const handleGenerateNewsletter = () => {
-    const selectedCount = items.filter(item => item.selected).length;
-    if (selectedCount === 0) {
-      showToastMessage('Please select at least one item', 'error');
-      return;
-    }
+  const handleGenerateNewsletter = async () => {
+    setIsGenerating(true);
     generateNewsletter.mutate();
   };
 
@@ -133,8 +117,6 @@ export default function ContentCuration() {
       </div>
     );
   }
-
-  const selectedCount = items.filter(item => item.selected).length;
 
   return (
     <div className="relative min-h-[calc(100vh-12rem)]">
@@ -171,14 +153,8 @@ export default function ContentCuration() {
           sourceFilter={sourceFilter}
           availableSources={availableSources}
           onSourceFilterChange={setSourceFilter}
-          onToggleSelect={(id, selected) => {
-            toggleSelection.mutate({ id, selected });
-          }}
-          onDelete={(ids) => {
-            if (ids.length > 0) {
-              deleteItems.mutate(ids);
-            }
-          }}
+          onToggleSelect={(id, selected) => toggleSelection.mutate({ id, selected })}
+          onDelete={(ids) => deleteItems.mutate(ids)}
           isDeleting={deleteItems.isLoading}
           isGenerating={isGenerating || generateNewsletter.isLoading}
         />
