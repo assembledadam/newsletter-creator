@@ -6,6 +6,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface ContentResponse {
+  title: string;
+  description: string;
+  author?: string;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -32,27 +38,38 @@ serve(async (req) => {
       source = url.includes('/newsletter/') ? 'linkedin_newsletter' : 'linkedin_search';
     }
 
-    // Use GPT to extract and summarize content
+    // Use GPT to extract and summarize content with a structured response format
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {
           role: 'system',
-          content: `You are an expert at extracting and summarizing content from web pages. For the given HTML content:
-1. Extract the main title
-2. Create a concise summary of the key points (2-3 sentences)
-3. Identify the author if available
-4. For LinkedIn posts, prioritize the author's name as the title
+          content: `You are an expert at extracting and summarising content from web pages, specialising in R&D tax-related content. 
 
-Focus on R&D tax-related information and implications.`
+Your task is to analyse the provided HTML content and return a structured response in the following format EXACTLY:
+
+{
+  "title": "The main article title, or for LinkedIn posts, the author's name",
+  "description": "A 2-3 sentence summary focusing on key points and R&D tax implications",
+  "author": "The content author's name (if available)"
+}
+
+Guidelines:
+- For LinkedIn posts, use the author's name as the title
+- For articles, use the main headline as the title (without any prefixes or domain info)
+- Keep descriptions focused and concise
+- Only include the author field if explicitly stated in the content
+- Return ONLY the JSON response, no additional text
+- Use British English in your response (en-gb)`
         },
         {
           role: 'user',
           content: `URL: ${url}\n\nHTML Content: ${html}`
         }
       ],
+      response_format: { type: "json_object" },
       temperature: 0.7,
-      max_tokens: 500,
+      max_tokens: 1500,
     });
 
     const content = completion.choices[0]?.message?.content;
@@ -60,18 +77,15 @@ Focus on R&D tax-related information and implications.`
       throw new Error('Failed to process content');
     }
 
-    // Parse GPT's response
-    const lines = content.split('\n');
-    const title = lines[0]?.replace(/^Title:\s*/, '').trim();
-    const description = lines.slice(1).join('\n').trim();
-    const author = lines.find(line => line.startsWith('Author:'))?.replace(/^Author:\s*/, '').trim();
+    // Parse the JSON response
+    const parsedContent = JSON.parse(content) as ContentResponse;
 
     return new Response(
       JSON.stringify({
         source,
-        title,
-        description,
-        author,
+        title: parsedContent.title,
+        description: parsedContent.description,
+        author: parsedContent.author,
         metadata: {
           domain: new URL(url).hostname
         }
