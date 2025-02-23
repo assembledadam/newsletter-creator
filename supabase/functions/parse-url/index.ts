@@ -34,7 +34,7 @@ serve(async (req) => {
 
     // Use GPT to extract and summarize content
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',
