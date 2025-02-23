@@ -30,9 +30,9 @@ export default function ContentCuration() {
     queryKey: ['content-sources'],
     queryFn: () => fetchContentSources(),
     select: (data) => {
-      // Sort items by content_date ascending
+      // Sort items by content_date descending (newest first)
       return [...data].sort((a, b) => 
-        new Date(a.content_date).getTime() - new Date(b.content_date).getTime()
+        new Date(b.content_date).getTime() - new Date(a.content_date).getTime()
       );
     }
   });
