@@ -6,7 +6,7 @@ interface LoadingOverlayProps {
 
 export function LoadingOverlay({ message = 'Loading...' }: LoadingOverlayProps) {
   return (
-    <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-[9999] flex items-center justify-center">
+    <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-[99999] flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md mx-auto">
         <Loader2 className="w-16 h-16 animate-spin text-blue-600 mx-auto" />
         <p className="mt-6 text-lg font-medium text-gray-900">{message}</p>

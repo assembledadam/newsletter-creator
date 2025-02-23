@@ -11,20 +11,36 @@ interface Props {
 export function AddContentUrl({ onAdd, isLoading = false }: Props) {
   const [url, setUrl] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim()) return;
 
-    await onAdd(url.trim());
-    setUrl('');
-    setIsOpen(false);
+    setIsSubmitting(true);
+    try {
+      await onAdd(url.trim());
+      setUrl('');
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Error adding content:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    // Prevent closing the dialog while submitting
+    if (isSubmitting || isLoading) return;
+    setIsOpen(open);
+  };
+
+  const showLoading = isLoading || isSubmitting;
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button>
+        <Button disabled={showLoading}>
           <Plus className="w-4 h-4 mr-2" />
           Add Content
         </Button>
@@ -45,14 +61,15 @@ export function AddContentUrl({ onAdd, isLoading = false }: Props) {
               placeholder="https://..."
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
               required
+              disabled={showLoading}
             />
             <p className="mt-1 text-sm text-gray-500">
               Enter a URL from LinkedIn, news articles, or other content sources
             </p>
           </div>
           <div className="flex justify-end">
-            <Button type="submit" disabled={isLoading || !url.trim()}>
-              {isLoading ? (
+            <Button type="submit" disabled={showLoading || !url.trim()}>
+              {showLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Adding...
@@ -63,6 +80,14 @@ export function AddContentUrl({ onAdd, isLoading = false }: Props) {
             </Button>
           </div>
         </form>
+        {showLoading && (
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center rounded-lg">
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
+              <p className="mt-2 text-sm font-medium text-gray-900">Adding content...</p>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

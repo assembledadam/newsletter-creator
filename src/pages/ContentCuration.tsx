@@ -147,7 +147,7 @@ export default function ContentCuration() {
           <h2 className="text-2xl font-bold">Content Curation</h2>
           <div className="flex items-center gap-4">
             <AddContentUrl 
-              onAdd={(url) => addContent.mutate(url)}
+              onAdd={(url) => addContent.mutateAsync(url)}
               isLoading={addContent.isLoading}
             />
             {selectedCount > 0 && (
