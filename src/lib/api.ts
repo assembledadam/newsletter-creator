@@ -149,6 +149,28 @@ export async function deleteContentSources(ids: string[]): Promise<void> {
   if (error) throw error;
 }
 
+export async function addContentFromUrl(url: string): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('parse-url', {
+    body: { url }
+  });
+
+  if (error) throw error;
+  
+  const { error: insertError } = await supabase
+    .from('content_sources')
+    .insert([{
+      content_date: new Date().toISOString(),
+      source: data.source,
+      title: data.title,
+      description: data.description,
+      author: data.author,
+      url: url,
+      metadata: data.metadata || {}
+    }]);
+
+  if (insertError) throw insertError;
+}
+
 export async function generateNewsletterFromSources(): Promise<Newsletter> {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error('Not authenticated');

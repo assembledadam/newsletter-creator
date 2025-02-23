@@ -3,8 +3,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ContentCurationList } from '@/components/content/ContentCurationList';
+import { AddContentUrl } from '@/components/content/AddContentUrl';
 import { LoadingOverlay } from '@/components/ui/loading-overlay';
-import { fetchContentSources, updateContentSourceSelection, deleteContentSources, generateNewsletterFromSources } from '@/lib/api';
+import { 
+  fetchContentSources, 
+  updateContentSourceSelection, 
+  deleteContentSources, 
+  generateNewsletterFromSources,
+  addContentFromUrl 
+} from '@/lib/api';
 import { FileText, Loader2 } from 'lucide-react';
 import { Toast } from '@/components/ui/toast';
 import type { ContentSource } from '@/lib/types';
@@ -53,6 +60,17 @@ export default function ContentCuration() {
     setToastType(type);
     setShowToast(true);
   };
+
+  const addContent = useMutation({
+    mutationFn: addContentFromUrl,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['content-sources'] });
+      showToastMessage('Content added successfully', 'success');
+    },
+    onError: (error) => {
+      showToastMessage(error instanceof Error ? error.message : 'Failed to add content', 'error');
+    }
+  });
 
   const toggleSelection = useMutation({
     mutationFn: ({ id, selected }: { id: string; selected: boolean }) =>
@@ -127,25 +145,31 @@ export default function ContentCuration() {
       <div className="space-y-8">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Content Curation</h2>
-          {selectedCount > 0 && (
-            <Button
-              onClick={handleGenerateNewsletter}
-              disabled={isGenerating || generateNewsletter.isLoading}
-              className="min-w-[200px]"
-            >
-              {(isGenerating || generateNewsletter.isLoading) ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Generate Newsletter ({selectedCount})
-                </>
-              )}
-            </Button>
-          )}
+          <div className="flex items-center gap-4">
+            <AddContentUrl 
+              onAdd={(url) => addContent.mutate(url)}
+              isLoading={addContent.isLoading}
+            />
+            {selectedCount > 0 && (
+              <Button
+                onClick={handleGenerateNewsletter}
+                disabled={isGenerating || generateNewsletter.isLoading}
+                className="min-w-[200px]"
+              >
+                {(isGenerating || generateNewsletter.isLoading) ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-4 h-4 mr-2" />
+                    Generate Newsletter ({selectedCount})
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </div>
 
         <ContentCurationList

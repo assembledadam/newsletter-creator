@@ -37,7 +37,7 @@ Source: ${item.source}${item.url ? `\nURL: ${item.url}` : ''}\n`)
     console.log('System prompt:', systemPrompt);
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Generate a newsletter based on the provided template and news items.' }

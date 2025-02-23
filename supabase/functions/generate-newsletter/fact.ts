@@ -45,7 +45,7 @@ export async function getOnThisDayFact(openai: OpenAI): Promise<string> {
     messages: [
       {
         role: 'system',
-        content: `You are a technology historian specialising in breakthrough innovations. Create a concise and engaging fact about a significant technological achievement that occurred on this day in history (${today}). Focus specifically on:
+        content: `You are a technology historian specializing in breakthrough innovations. Create a concise and engaging fact about a significant technological achievement that occurred on this day in history (${today}). Focus specifically on:
 
 1. First successful demonstrations of new technologies
 2. Groundbreaking patent grants
