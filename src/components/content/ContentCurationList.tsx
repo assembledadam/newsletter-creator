@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, Filter, Loader2 } from 'lucide-react';
+import { Trash2, Filter, Loader2, Archive } from 'lucide-react';
 import { formatSourceType } from '@/lib/utils/formatters';
 import { formatRelativeTime } from '@/lib/utils/date';
 import { marked } from 'marked';
@@ -13,9 +13,12 @@ interface Props {
   availableSources: string[];
   onSourceFilterChange: (source: string) => void;
   onToggleSelect: (id: string, selected: boolean) => void;
+  onToggleArchive: (id: string, archived: boolean) => void;
+  onBulkArchive: (ids: string[], archived: boolean) => void;
   onDelete: (ids: string[]) => void;
   isDeleting?: boolean;
   isGenerating?: boolean;
+  showArchived?: boolean;
 }
 
 export function ContentCurationList({ 
@@ -23,10 +26,13 @@ export function ContentCurationList({
   sourceFilter,
   availableSources,
   onSourceFilterChange, 
-  onToggleSelect, 
+  onToggleSelect,
+  onToggleArchive,
+  onBulkArchive,
   onDelete,
   isDeleting = false,
-  isGenerating = false
+  isGenerating = false,
+  showArchived = false
 }: Props) {
   const [selectedForDeletion, setSelectedForDeletion] = useState<Set<string>>(new Set());
 
@@ -70,6 +76,14 @@ export function ContentCurationList({
     }
   };
 
+  const handleBulkArchive = (archive: boolean) => {
+    if (selectedForDeletion.size > 0) {
+      const selectedIds = Array.from(selectedForDeletion);
+      onBulkArchive(selectedIds, archive);
+      setSelectedForDeletion(new Set()); // Clear selection after archiving
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -90,26 +104,39 @@ export function ContentCurationList({
           <Filter className="w-4 h-4 text-gray-500" />
         </div>
         
-        {selectedForDeletion.size > 0 && (
-          <Button
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={isDeleting || isGenerating}
-            className="flex items-center gap-2"
-          >
-            {isDeleting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Deleting...
-              </>
-            ) : (
-              <>
-                <Trash2 className="w-4 h-4" />
-                Delete Selected ({selectedForDeletion.size})
-              </>
-            )}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {selectedForDeletion.size > 0 && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => handleBulkArchive(!showArchived)}
+                disabled={isGenerating}
+                className="flex items-center gap-2"
+              >
+                <Archive className="w-4 h-4" />
+                {showArchived ? 'Unarchive' : 'Archive'} Selected ({selectedForDeletion.size})
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={isDeleting || isGenerating}
+                className="flex items-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Delete Selected ({selectedForDeletion.size})
+                  </>
+                )}
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className={`bg-white rounded-lg shadow transition-opacity ${isGenerating ? 'opacity-50' : ''}`}>
@@ -122,7 +149,7 @@ export function ContentCurationList({
               onClick={(e) => e.stopPropagation()}
             />
             <span className="text-sm font-medium text-gray-700">
-              {selectedForDeletion.size} selected for deletion
+              {selectedForDeletion.size} selected
             </span>
           </div>
         </div>
@@ -134,9 +161,11 @@ export function ContentCurationList({
               className={`p-4 cursor-pointer transition-colors ${
                 item.selected 
                   ? 'bg-green-50 hover:bg-green-100' 
+                  : item.archived
+                  ? 'bg-gray-50 hover:bg-gray-100'
                   : 'hover:bg-gray-50'
               }`}
-              onClick={() => onToggleSelect(item.id, !item.selected)}
+              onClick={() => !item.archived && onToggleSelect(item.id, !item.selected)}
             >
               <div className="flex items-start gap-3">
                 <Checkbox
@@ -181,17 +210,31 @@ export function ContentCurationList({
                       />
                     </div>
                     <div className="flex items-center gap-2 ml-4">
+                      {!item.archived && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleSelect(item.id, !item.selected);
+                          }}
+                          className={item.selected ? 'text-green-600' : 'text-gray-400'}
+                          disabled={isGenerating}
+                        >
+                          {item.selected ? 'Selected' : 'Select'}
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onToggleSelect(item.id, !item.selected);
+                          onToggleArchive(item.id, !item.archived);
                         }}
-                        className={item.selected ? 'text-green-600' : 'text-gray-400'}
+                        className={item.archived ? 'text-amber-600' : 'text-gray-400'}
                         disabled={isGenerating}
                       >
-                        {item.selected ? 'Selected' : 'Select'}
+                        <Archive className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -214,6 +257,12 @@ export function ContentCurationList({
                     )}
                     <span>•</span>
                     <span>{formatRelativeTime(item.content_date)}</span>
+                    {item.archived && (
+                      <>
+                        <span>•</span>
+                        <span className="text-amber-600">Archived</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

@@ -10,11 +10,13 @@ import {
   updateContentSourceSelection, 
   deleteContentSources, 
   generateNewsletterFromSources,
-  addContentFromUrl 
+  addContentFromUrl,
+  updateContentSourceArchived,
+  bulkUpdateContentSourceArchived
 } from '@/lib/api';
-import { FileText, Loader2 } from 'lucide-react';
+import { FileText, Loader2, Archive } from 'lucide-react';
 import { Toast } from '@/components/ui/toast';
-import type { ContentSource } from '@/lib/types';
+import type { ContentSource, Newsletter } from '@/lib/types';
 
 export default function ContentCuration() {
   const navigate = useNavigate();
@@ -24,11 +26,12 @@ export default function ContentCuration() {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
 
   // Fetch all items in a single query
   const { data: allItems = [], isLoading } = useQuery({
-    queryKey: ['content-sources'],
-    queryFn: () => fetchContentSources(),
+    queryKey: ['content-sources', showArchived],
+    queryFn: () => fetchContentSources(undefined, showArchived),
     select: (data) => {
       // Sort items by content_date descending (newest first)
       return [...data].sort((a, b) => 
@@ -100,6 +103,62 @@ export default function ContentCuration() {
     }
   });
 
+  const toggleArchived = useMutation({
+    mutationFn: ({ id, archived }: { id: string; archived: boolean }) =>
+      updateContentSourceArchived(id, archived),
+    onMutate: async ({ id, archived }) => {
+      await queryClient.cancelQueries({ queryKey: ['content-sources'] });
+      const previousItems = queryClient.getQueryData<ContentSource[]>(['content-sources']);
+      
+      // Update the cache optimistically while maintaining sort order
+      queryClient.setQueryData<ContentSource[]>(['content-sources'], old => {
+        if (!old) return [];
+        return old.map(item => 
+          item.id === id ? { ...item, archived } : item
+        );
+      });
+      
+      return { previousItems };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousItems) {
+        queryClient.setQueryData(['content-sources'], context.previousItems);
+      }
+      showToastMessage('Failed to update archive status', 'error');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['content-sources'] });
+    }
+  });
+
+  const bulkArchive = useMutation({
+    mutationFn: ({ ids, archived }: { ids: string[], archived: boolean }) =>
+      bulkUpdateContentSourceArchived(ids, archived),
+    onMutate: async ({ ids, archived }) => {
+      await queryClient.cancelQueries({ queryKey: ['content-sources'] });
+      const previousItems = queryClient.getQueryData<ContentSource[]>(['content-sources']);
+      
+      // Update the cache optimistically while maintaining sort order
+      queryClient.setQueryData<ContentSource[]>(['content-sources'], old => {
+        if (!old) return [];
+        return old.map(item => 
+          ids.includes(item.id) ? { ...item, archived } : item
+        );
+      });
+      
+      return { previousItems };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousItems) {
+        queryClient.setQueryData(['content-sources'], context.previousItems);
+      }
+      showToastMessage('Failed to update archive status', 'error');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['content-sources'] });
+    }
+  });
+
   const deleteItems = useMutation({
     mutationFn: deleteContentSources,
     onSuccess: () => {
@@ -111,7 +170,7 @@ export default function ContentCuration() {
     }
   });
 
-  const generateNewsletter = useMutation({
+  const generateNewsletter = useMutation<Newsletter>({
     mutationFn: generateNewsletterFromSources,
     onSuccess: (newsletter) => {
       queryClient.invalidateQueries({ queryKey: ['content-sources'] });
@@ -138,7 +197,7 @@ export default function ContentCuration() {
 
   return (
     <div className="relative min-h-[calc(100vh-12rem)]">
-      {(isGenerating || generateNewsletter.isLoading) && (
+      {(isGenerating || generateNewsletter.isPending) && (
         <LoadingOverlay message="Generating your newsletter... This may take a few moments." />
       )}
       
@@ -146,17 +205,25 @@ export default function ContentCuration() {
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Content Curation</h2>
           <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowArchived(!showArchived)}
+              className="flex items-center gap-2"
+            >
+              <Archive className="w-4 h-4" />
+              {showArchived ? 'Hide Archived' : 'Show Archived'}
+            </Button>
             <AddContentUrl 
               onAdd={(url) => addContent.mutateAsync(url)}
-              isLoading={addContent.isLoading}
+              isLoading={addContent.isPending}
             />
             {selectedCount > 0 && (
               <Button
                 onClick={handleGenerateNewsletter}
-                disabled={isGenerating || generateNewsletter.isLoading}
+                disabled={isGenerating || generateNewsletter.isPending}
                 className="min-w-[200px]"
               >
-                {(isGenerating || generateNewsletter.isLoading) ? (
+                {(isGenerating || generateNewsletter.isPending) ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Generating...
@@ -177,10 +244,13 @@ export default function ContentCuration() {
           sourceFilter={sourceFilter}
           availableSources={availableSources}
           onSourceFilterChange={setSourceFilter}
-          onToggleSelect={(id, selected) => toggleSelection.mutate({ id, selected })}
+          onToggleSelect={(id: string, selected: boolean) => toggleSelection.mutate({ id, selected })}
+          onToggleArchive={(id: string, archived: boolean) => toggleArchived.mutate({ id, archived })}
+          onBulkArchive={(ids: string[], archived: boolean) => bulkArchive.mutate({ ids, archived })}
           onDelete={(ids) => deleteItems.mutate(ids)}
-          isDeleting={deleteItems.isLoading}
-          isGenerating={isGenerating || generateNewsletter.isLoading}
+          isDeleting={deleteItems.isPending}
+          isGenerating={isGenerating || generateNewsletter.isPending}
+          showArchived={showArchived}
         />
 
         {showToast && (

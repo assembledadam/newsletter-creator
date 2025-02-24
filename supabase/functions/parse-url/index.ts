@@ -6,6 +6,39 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// List of known public suffixes that require special handling
+const PUBLIC_SUFFIXES = new Set([
+  'co.uk', 'com.au', 'co.nz', 'co.jp', 'com.br', 'com.cn',
+  'co.in', 'co.za', 'com.sg', 'org.uk', 'net.au', 'org.au',
+  'ac.uk', 'gov.uk', 'gov.au', 'edu.au'
+]);
+
+function getRootDomain(hostname: string): string {
+  const parts = hostname.toLowerCase().split('.');
+  
+  // Handle IP addresses
+  if (parts.every(part => !isNaN(parseInt(part)))) {
+    return hostname;
+  }
+  
+  // Try to match known public suffixes first
+  const domainParts = [...parts];
+  while (domainParts.length > 1) {
+    const suffix = domainParts.slice(-2).join('.');
+    if (PUBLIC_SUFFIXES.has(suffix)) {
+      return domainParts.slice(-3).join('.');
+    }
+    const suffix3 = domainParts.slice(-3).join('.');
+    if (PUBLIC_SUFFIXES.has(suffix3)) {
+      return domainParts.slice(-4).join('.');
+    }
+    domainParts.shift();
+  }
+  
+  // Default to last two parts for standard domains
+  return parts.slice(-2).join('.');
+}
+
 interface ContentResponse {
   title: string;
   description: string;
@@ -87,7 +120,7 @@ Guidelines:
         description: parsedContent.description,
         author: parsedContent.author,
         metadata: {
-          domain: new URL(url).hostname
+          domain: getRootDomain(new URL(url).hostname)
         }
       }),
       { 

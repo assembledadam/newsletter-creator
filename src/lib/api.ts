@@ -112,14 +112,18 @@ export async function deleteNewsletter(id: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function fetchContentSources(source?: string): Promise<ContentSource[]> {
+export async function fetchContentSources(source?: string, showArchived: boolean = false): Promise<ContentSource[]> {
   let query = supabase
     .from('content_sources')
     .select('*')
-    .order('content_date', { ascending: true }); // Changed to ascending order
+    .order('content_date', { ascending: true });
 
   if (source) {
     query = query.eq('source', source);
+  }
+
+  if (!showArchived) {
+    query = query.eq('archived', false);
   }
 
   const { data, error } = await query;
@@ -242,4 +246,22 @@ export async function generateNewsletterContent(
   
   if (error) throw error;
   return data;
+}
+
+export async function updateContentSourceArchived(id: string, archived: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('content_sources')
+    .update({ archived })
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+export async function bulkUpdateContentSourceArchived(ids: string[], archived: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('content_sources')
+    .update({ archived })
+    .in('id', ids);
+
+  if (error) throw error;
 }
