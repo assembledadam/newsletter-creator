@@ -175,7 +175,9 @@ export async function addContentFromUrl(url: string): Promise<void> {
   if (insertError) throw insertError;
 }
 
-export async function generateNewsletterFromSources(): Promise<Newsletter> {
+export async function generateNewsletterFromSources(targetDate?: Date): Promise<Newsletter> {
+  console.log('generateNewsletterFromSources called with date:', targetDate?.toISOString());
+  
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error('Not authenticated');
 
@@ -184,7 +186,7 @@ export async function generateNewsletterFromSources(): Promise<Newsletter> {
     .from('content_sources')
     .select('*')
     .eq('selected', true)
-    .order('content_date', { ascending: true }); // Ensure selected items are also ordered
+    .order('content_date', { ascending: true });
 
   if (fetchError) throw fetchError;
 
@@ -200,16 +202,25 @@ export async function generateNewsletterFromSources(): Promise<Newsletter> {
   // Get user settings
   const settings = await fetchSettings();
 
-  // Generate newsletter content
+  // Generate newsletter content with target date
+  const isoDate = targetDate?.toISOString();
+  console.log('Calling generate-newsletter function with date:', isoDate);
+  
   const { data, error } = await supabase.functions.invoke('generate-newsletter', {
     body: { 
       items,
       prompt: settings.promptTemplate,
-      template: settings.newsletterTemplate
+      template: settings.newsletterTemplate,
+      targetDate: isoDate
     }
   });
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error from generate-newsletter:', error);
+    throw error;
+  }
+
+  console.log('Newsletter generated successfully with date:', isoDate);
 
   // Generate title with date range
   const dateRange = getWeekDateRange();
@@ -238,10 +249,11 @@ export async function generateNewsletterFromSources(): Promise<Newsletter> {
 export async function generateNewsletterContent(
   items: NewsItem[],
   prompt: string,
-  template: string
+  template: string,
+  targetDate?: Date
 ): Promise<{ content: string }> {
   const { data, error } = await supabase.functions.invoke('generate-newsletter', {
-    body: { items, prompt, template }
+    body: { items, prompt, template, targetDate: targetDate?.toISOString() }
   });
   
   if (error) throw error;

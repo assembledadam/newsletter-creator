@@ -13,17 +13,20 @@ serve(async (req) => {
   }
 
   try {
-    const { items, prompt, template } = await req.json();
+    const { items, prompt, template, targetDate } = await req.json();
     
-    console.log('Received items:', JSON.stringify(items, null, 2));
+    console.log('Backend - Received request with targetDate:', targetDate);
+    console.log('Backend - targetDate type:', typeof targetDate);
+    console.log('Backend - Received items:', JSON.stringify(items, null, 2));
 
     const openai = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY'),
     });
 
     // Get the "On this day" fact with research capability
-    const onThisDayFact = await getOnThisDayFact(openai);
-    console.log('On this day fact:', onThisDayFact);
+    console.log('Backend - Calling getOnThisDayFact with date:', targetDate);
+    const onThisDayFact = await getOnThisDayFact(openai, targetDate);
+    console.log('Backend - Generated fact:', onThisDayFact);
 
     // Prepare the content for GPT with URLs included
     const itemsText = items
@@ -56,7 +59,7 @@ Source: ${item.source}${item.url ? `\nURL: ${item.url}` : ''}\n`)
       },
     );
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('Backend - API Error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 

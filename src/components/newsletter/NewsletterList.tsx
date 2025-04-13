@@ -16,7 +16,7 @@ export function NewsletterList({ newsletters }: Props) {
           No newsletters yet
         </h3>
         <p className="text-gray-500">
-          Create your first newsletter by clicking the button above.
+          Newsletters will appear here once they are generated.
         </p>
       </div>
     );
@@ -29,7 +29,7 @@ export function NewsletterList({ newsletters }: Props) {
           key={newsletter.id} 
           newsletter={newsletter} 
           onDelete={deleteNewsletter}
-          onUpdate={(id, updates) => updateNewsletter({ id, newsletter: updates })}
+          onUpdate={(id, updates) => updateNewsletter({ id, newsletter: { ...newsletter, ...updates } })}
         />
       ))}
     </div>

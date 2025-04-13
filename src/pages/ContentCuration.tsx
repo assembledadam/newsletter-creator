@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ContentCurationList } from '@/components/content/ContentCurationList';
 import { AddContentUrl } from '@/components/content/AddContentUrl';
 import { LoadingOverlay } from '@/components/ui/loading-overlay';
+import { DatePickerModal } from '@/components/newsletter/DatePickerModal';
 import { 
   fetchContentSources, 
   updateContentSourceSelection, 
@@ -27,6 +28,8 @@ export default function ContentCuration() {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Fetch all items in a single query
   const { data: allItems = [], isLoading } = useQuery({
@@ -170,21 +173,32 @@ export default function ContentCuration() {
     }
   });
 
-  const generateNewsletter = useMutation<Newsletter>({
-    mutationFn: generateNewsletterFromSources,
+  const generateNewsletter = useMutation<Newsletter, Error, Date>({
+    mutationFn: (date: Date) => {
+      console.log('Generating newsletter for date:', date);
+      return generateNewsletterFromSources(date);
+    },
     onSuccess: (newsletter) => {
       queryClient.invalidateQueries({ queryKey: ['content-sources'] });
+      setIsGenerating(false);
+      setShowDatePicker(false);
       navigate(`/edit/${newsletter.id}`);
     },
     onError: () => {
       showToastMessage('Failed to generate newsletter', 'error');
       setIsGenerating(false);
+      setShowDatePicker(false);
     }
   });
 
   const handleGenerateNewsletter = async () => {
+    setShowDatePicker(true);
+  };
+
+  const handleDateSelected = (date: Date) => {
+    console.log('Date selected:', date);
     setIsGenerating(true);
-    generateNewsletter.mutate();
+    generateNewsletter.mutate(date);
   };
 
   if (isLoading) {
@@ -260,6 +274,12 @@ export default function ContentCuration() {
             onClose={() => setShowToast(false)}
           />
         )}
+
+        <DatePickerModal
+          isOpen={showDatePicker}
+          onClose={() => setShowDatePicker(false)}
+          onDateSelected={handleDateSelected}
+        />
       </div>
     </div>
   );

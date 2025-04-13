@@ -1,5 +1,10 @@
 # newsletter-creator
 
+## Run in dev
+```
+yarn dev
+```
+
 ## Supabase operations
 ### To set up supabase operations
 ```

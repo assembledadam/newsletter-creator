@@ -1,16 +1,52 @@
 import OpenAI from 'https://esm.sh/openai@4.28.0';
-import { format } from 'https://esm.sh/date-fns@2.30.0';
+import { format, parseISO } from 'https://esm.sh/date-fns@2.30.0';
 import { searchHistoricalEvents } from './research.ts';
 
-export async function getOnThisDayFact(openai: OpenAI): Promise<string> {
-  const today = format(new Date(), 'MMMM d');
+export async function getOnThisDayFact(openai: OpenAI, targetDate?: string): Promise<string> {
+  console.log('getOnThisDayFact - Received targetDate:', targetDate);
+  console.log('getOnThisDayFact - targetDate type:', typeof targetDate);
+  
+  // Parse the ISO string date if provided, otherwise use current date
+  const date = targetDate ? parseISO(targetDate) : new Date();
+  console.log('getOnThisDayFact - Initial parsed date:', date);
+  console.log('getOnThisDayFact - Initial date components:', {
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+    hours: date.getUTCHours(),
+    minutes: date.getUTCMinutes(),
+    timezone: date.getTimezoneOffset()
+  });
+
+  // Ensure we're working with UTC dates by setting to noon UTC
+  const utcDate = new Date(Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    12, 0, 0, 0  // Use noon UTC to avoid any date shifting
+  ));
+  
+  console.log('getOnThisDayFact - Created UTC date:', utcDate.toISOString());
+  console.log('getOnThisDayFact - UTC date components:', {
+    year: utcDate.getUTCFullYear(),
+    month: utcDate.getUTCMonth() + 1,
+    day: utcDate.getUTCDate(),
+    hours: utcDate.getUTCHours(),
+    minutes: utcDate.getUTCMinutes()
+  });
+  
+  // Format the date using UTC values directly
+  const month = format(utcDate, 'MMMM');
+  const day = utcDate.getUTCDate();
+  const formattedDate = `${month} ${day}`;
+  console.log('getOnThisDayFact - Formatted date for prompt:', formattedDate);
 
   const completion = await openai.chat.completions.create({
     model: 'gpt-4',
     messages: [
       {
         role: 'user',
-        content: `Today is ${today}. Find a significant technological breakthrough, invention, or scientific discovery that happened on this day. Focus on concrete achievements like first successful demonstrations, patent grants, or research breakthroughs.`
+        content: `Today is ${formattedDate}. Find a significant technological breakthrough, invention, or scientific discovery that happened on this day. Focus on concrete achievements like first successful demonstrations, patent grants, or research breakthroughs.`
       }
     ],
     functions: [
@@ -37,15 +73,15 @@ export async function getOnThisDayFact(openai: OpenAI): Promise<string> {
     throw new Error('No function call received from GPT');
   }
 
-  const { date } = JSON.parse(functionCall.arguments);
-  const searchResults = await searchHistoricalEvents(date);
+  const { date: searchDate } = JSON.parse(functionCall.arguments);
+  const searchResults = await searchHistoricalEvents(searchDate);
 
   const finalCompletion = await openai.chat.completions.create({
     model: 'gpt-4',
     messages: [
       {
         role: 'system',
-        content: `You are a technology historian specializing in breakthrough innovations. Create a concise and engaging fact about a significant technological achievement that occurred on this day in history (${today}). Focus specifically on:
+        content: `You are a technology historian specializing in breakthrough innovations. Create a concise and engaging fact about a significant technological achievement that occurred on this day in history (${formattedDate}). Focus specifically on:
 
 1. First successful demonstrations of new technologies
 2. Groundbreaking patent grants
@@ -57,7 +93,7 @@ Include the specific year and, if relevant, the names of key inventors or resear
       },
       {
         role: 'user',
-        content: `Here are the search results for historical events on ${today}:\n\n${JSON.stringify(searchResults, null, 2)}`
+        content: `Here are the search results for historical events on ${formattedDate}:\n\n${JSON.stringify(searchResults, null, 2)}`
       }
     ],
     temperature: 0.7,

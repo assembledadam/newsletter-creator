@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useNewsletters } from '@/lib/hooks/useNewsletters';
 import { NewsletterList } from '@/components/newsletter/NewsletterList';
-import { PlusCircle, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export default function Dashboard() {
   const { newsletters, isLoading } = useNewsletters();
@@ -26,12 +26,6 @@ export default function Dashboard() {
     <div>
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-2xl font-bold">Your Newsletters</h2>
-        <Link to="/new">
-          <Button>
-            <PlusCircle className="w-4 h-4 mr-2" />
-            New Newsletter
-          </Button>
-        </Link>
       </div>
 
       <NewsletterList newsletters={sortedNewsletters} />

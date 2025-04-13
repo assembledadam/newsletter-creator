@@ -5,7 +5,7 @@ import { useSettings } from '@/lib/hooks/useSettings';
 import { generateNewsletterContent } from '@/lib/api';
 import { NewsItemList } from '@/components/newsletter/NewsItemList';
 import { NewsletterEditor } from '@/components/newsletter/NewsletterEditor';
-import { SheetUrlInput } from '@/components/newsletter/SheetUrlInput';
+import { DatePickerModal } from '@/components/newsletter/DatePickerModal';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,38 +20,17 @@ export default function NewNewsletter() {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<NewsItem[]>([]);
   const [content, setContent] = useState('');
-  const [step, setStep] = useState<'url' | 'select' | 'edit'>('url');
+  const [step, setStep] = useState<'select' | 'edit'>('select');
   const [error, setError] = useState<string | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<NewsItem[]>([]);
 
-  const handleFetchItems = async (url: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Call the parse-sheet function directly
-      const response = await fetch('/.netlify/functions/parse-sheet', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch items from the Google Sheet');
-      }
-
-      const newsItems = await response.json();
-      setItems(newsItems.map((item: NewsItem) => ({ ...item, selected: false })));
-      setStep('select');
-    } catch (error) {
-      console.error('Failed to fetch items:', error);
-      setError('Failed to fetch items from the Google Sheet. Please check the URL and try again.');
-    } finally {
-      setLoading(false);
-    }
+  const handleGenerate = async (items: NewsItem[]) => {
+    setSelectedItems(items);
+    setShowDatePicker(true);
   };
 
-  const handleGenerate = async (selectedItems: NewsItem[]) => {
+  const handleDateSelected = async (date: Date) => {
     if (!user || !settings) return;
     
     setLoading(true);
@@ -60,7 +39,8 @@ export default function NewNewsletter() {
       const { content } = await generateNewsletterContent(
         selectedItems.filter(item => item.selected),
         settings.promptTemplate,
-        settings.newsletterTemplate
+        settings.newsletterTemplate,
+        date
       );
       setContent(content);
       
@@ -84,6 +64,7 @@ export default function NewNewsletter() {
       setError('Failed to generate newsletter. Please try again.');
     } finally {
       setLoading(false);
+      setShowDatePicker(false);
     }
   };
 
@@ -106,7 +87,6 @@ export default function NewNewsletter() {
           {error}
         </div>
       )}
-      {step === 'url' && <SheetUrlInput onSubmit={handleFetchItems} />}
       {step === 'select' && <NewsItemList items={items} onGenerate={handleGenerate} />}
       {step === 'edit' && (
         <NewsletterEditor 
@@ -116,6 +96,11 @@ export default function NewNewsletter() {
           onSave={handleSave} 
         />
       )}
+      <DatePickerModal
+        isOpen={showDatePicker}
+        onClose={() => setShowDatePicker(false)}
+        onDateSelected={handleDateSelected}
+      />
     </div>
   );
 }
