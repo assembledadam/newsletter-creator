@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, Filter, Loader2, Archive } from 'lucide-react';
+import { Trash2, Filter, Loader2, Archive, FileText } from 'lucide-react';
 import { formatSourceType } from '@/lib/utils/formatters';
 import { formatRelativeTime } from '@/lib/utils/date';
 import { marked } from 'marked';
@@ -16,6 +16,7 @@ interface Props {
   onToggleArchive: (id: string, archived: boolean) => void;
   onBulkArchive: (ids: string[], archived: boolean) => void;
   onDelete: (ids: string[]) => void;
+  onBulkSelect: (ids: string[]) => void;
   isDeleting?: boolean;
   isGenerating?: boolean;
   showArchived?: boolean;
@@ -30,6 +31,7 @@ export function ContentCurationList({
   onToggleArchive,
   onBulkArchive,
   onDelete,
+  onBulkSelect,
   isDeleting = false,
   isGenerating = false,
   showArchived = false
@@ -84,6 +86,14 @@ export function ContentCurationList({
     }
   };
 
+  const handleBulkSelect = () => {
+    if (selectedForDeletion.size > 0) {
+      const selectedIds = Array.from(selectedForDeletion);
+      onBulkSelect(selectedIds);
+      setSelectedForDeletion(new Set());
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -107,6 +117,15 @@ export function ContentCurationList({
         <div className="flex items-center gap-2">
           {selectedForDeletion.size > 0 && (
             <>
+              <Button
+                variant="outline"
+                onClick={handleBulkSelect}
+                disabled={isGenerating}
+                className="flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                Select for Curation ({selectedForDeletion.size})
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => handleBulkArchive(!showArchived)}

@@ -21,6 +21,7 @@ export interface Settings {
   promptTemplate: string;
   newsletterTemplate: string;
   defaultNewsletterTitle: string;
+  newsletterExamples: string[];
 }
 
 export interface ContentSource {

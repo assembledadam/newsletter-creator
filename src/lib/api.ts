@@ -18,7 +18,8 @@ const DEFAULT_SETTINGS: Settings = {
 
 ---
 *Want to discuss how these changes might affect your R&D tax claims? Let's connect.*`,
-  defaultNewsletterTitle: 'The Week In R&D Tax'
+  defaultNewsletterTitle: 'The Week In R&D Tax',
+  newsletterExamples: [], // Initialize as empty array
 };
 
 export async function fetchSettings(): Promise<Settings> {
@@ -42,7 +43,9 @@ export async function fetchSettings(): Promise<Settings> {
   return {
     promptTemplate: data.prompt_template || DEFAULT_SETTINGS.promptTemplate,
     newsletterTemplate: data.newsletter_template || DEFAULT_SETTINGS.newsletterTemplate,
-    defaultNewsletterTitle: data.default_newsletter_title || DEFAULT_SETTINGS.defaultNewsletterTitle
+    defaultNewsletterTitle: data.default_newsletter_title || DEFAULT_SETTINGS.defaultNewsletterTitle,
+    // Ensure examples is always an array, even if null/undefined in DB
+    newsletterExamples: data.newsletter_examples || [], 
   };
 }
 
@@ -56,7 +59,9 @@ export async function saveSettings(settings: Settings): Promise<void> {
       user_id: user.user.id,
       prompt_template: settings.promptTemplate,
       newsletter_template: settings.newsletterTemplate,
-      default_newsletter_title: settings.defaultNewsletterTitle
+      default_newsletter_title: settings.defaultNewsletterTitle,
+      // Make sure we save null if array is empty, or the array itself
+      newsletter_examples: settings.newsletterExamples.length > 0 ? settings.newsletterExamples : null,
     });
 
   if (upsertError) throw upsertError;
@@ -211,6 +216,7 @@ export async function generateNewsletterFromSources(targetDate?: Date): Promise<
       items,
       prompt: settings.promptTemplate,
       template: settings.newsletterTemplate,
+      examples: settings.newsletterExamples, // Pass examples here
       targetDate: isoDate
     }
   });
@@ -250,10 +256,11 @@ export async function generateNewsletterContent(
   items: NewsItem[],
   prompt: string,
   template: string,
+  examples: string[], // Add examples here
   targetDate?: Date
 ): Promise<{ content: string }> {
   const { data, error } = await supabase.functions.invoke('generate-newsletter', {
-    body: { items, prompt, template, targetDate: targetDate?.toISOString() }
+    body: { items, prompt, template, examples, targetDate: targetDate?.toISOString() } // Pass examples here
   });
   
   if (error) throw error;

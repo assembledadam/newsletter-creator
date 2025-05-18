@@ -19,6 +19,13 @@ import { FileText, Loader2, Archive } from 'lucide-react';
 import { Toast } from '@/components/ui/toast';
 import type { ContentSource, Newsletter } from '@/lib/types';
 
+// Helper function for bulk selection API calls
+const bulkSelectContentSources = async (ids: string[]): Promise<void> => {
+  // Ideally, this would be a single API call
+  // For now, we'll call updateContentSourceSelection for each ID
+  await Promise.all(ids.map(id => updateContentSourceSelection(id, true)));
+};
+
 export default function ContentCuration() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -162,6 +169,34 @@ export default function ContentCuration() {
     }
   });
 
+  // Mutation for bulk selecting items
+  const bulkSelectItems = useMutation({ 
+    mutationFn: bulkSelectContentSources, // Use the helper function
+    onMutate: async (ids) => {
+      await queryClient.cancelQueries({ queryKey: ['content-sources'] });
+      const previousItems = queryClient.getQueryData<ContentSource[]>(['content-sources']);
+
+      // Optimistically update the selected status
+      queryClient.setQueryData<ContentSource[]>(['content-sources'], old => {
+        if (!old) return [];
+        return old.map(item => 
+          ids.includes(item.id) ? { ...item, selected: true } : item
+        );
+      });
+
+      return { previousItems };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousItems) {
+        queryClient.setQueryData(['content-sources'], context.previousItems);
+      }
+      showToastMessage('Failed to bulk select items', 'error');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['content-sources'] });
+    }
+  });
+
   const deleteItems = useMutation({
     mutationFn: deleteContentSources,
     onSuccess: () => {
@@ -261,6 +296,7 @@ export default function ContentCuration() {
           onToggleSelect={(id: string, selected: boolean) => toggleSelection.mutate({ id, selected })}
           onToggleArchive={(id: string, archived: boolean) => toggleArchived.mutate({ id, archived })}
           onBulkArchive={(ids: string[], archived: boolean) => bulkArchive.mutate({ ids, archived })}
+          onBulkSelect={(ids) => bulkSelectItems.mutate(ids)}
           onDelete={(ids) => deleteItems.mutate(ids)}
           isDeleting={deleteItems.isPending}
           isGenerating={isGenerating || generateNewsletter.isPending}
