@@ -42,7 +42,7 @@ export async function getOnThisDayFact(openai: OpenAI, targetDate?: string): Pro
   console.log('getOnThisDayFact - Formatted date for prompt:', formattedDate);
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4',
+    model: 'gpt-5',
     messages: [
       {
         role: 'user',
@@ -77,11 +77,11 @@ export async function getOnThisDayFact(openai: OpenAI, targetDate?: string): Pro
   const searchResults = await searchHistoricalEvents(searchDate);
 
   const finalCompletion = await openai.chat.completions.create({
-    model: 'gpt-4',
+    model: 'gpt-5',
     messages: [
       {
         role: 'system',
-        content: `You are a technology historian specializing in breakthrough innovations. Create a concise and engaging fact about a significant technological achievement that occurred on this day in history (${formattedDate}). Focus specifically on:
+        content: `You are a technology historian specialising in breakthrough innovations. Create a concise and engaging fact about a significant technological achievement that occurred on this day in history (${formattedDate}). Focus specifically on:
 
 1. First successful demonstrations of new technologies
 2. Groundbreaking patent grants
@@ -89,7 +89,7 @@ export async function getOnThisDayFact(openai: OpenAI, targetDate?: string): Pro
 4. Launch of revolutionary products or systems
 5. Key discoveries that enabled future innovations
 
-Include the specific year and, if relevant, the names of key inventors or researchers. Aim to highlight concrete achievements rather than general historical events.`
+Include the specific year and, if relevant, the names of key inventors or researchers. Aim to highlight concrete achievements rather than general historical events. Use British English.`
       },
       {
         role: 'user',
@@ -97,7 +97,7 @@ Include the specific year and, if relevant, the names of key inventors or resear
       }
     ],
     temperature: 0.7,
-    max_tokens: 200
+    max_tokens: 1000
   });
 
   return finalCompletion.choices[0]?.message?.content || '';

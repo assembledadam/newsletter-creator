@@ -73,7 +73,7 @@ serve(async (req) => {
 
     // Use GPT to extract and summarize content with a structured response format
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-5',
       messages: [
         {
           role: 'system',
@@ -102,7 +102,7 @@ Guidelines:
       ],
       response_format: { type: "json_object" },
       temperature: 0.7,
-      max_tokens: 1500,
+      max_tokens: 100000,
     });
 
     const content = completion.choices[0]?.message?.content;
