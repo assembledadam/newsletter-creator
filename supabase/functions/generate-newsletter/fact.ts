@@ -97,7 +97,7 @@ Include the specific year and, if relevant, the names of key inventors or resear
       }
     ],
     temperature: 0.7,
-    max_tokens: 1000
+    // max_tokens: 1000
   });
 
   return finalCompletion.choices[0]?.message?.content || '';

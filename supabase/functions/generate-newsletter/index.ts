@@ -75,7 +75,7 @@ ${itemsText}`
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.7,
-      max_tokens: 256000, // Consider increasing if examples make prompts too long
+      // max_tokens: 256000, // Consider increasing if examples make prompts too long
     });
 
     const content = completion.choices[0]?.message?.content || '';
