@@ -61,7 +61,7 @@ ${template}
 ${examplesText}`;
 
 const userPrompt = `
-Generate a new newsletter article based on the below news items:
+Generate a new newsletter article based on ALL of the below news items:
 
 ${itemsText}`
 
@@ -69,13 +69,13 @@ ${itemsText}`
     console.log('User prompt:', userPrompt);
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-5',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.7,
-      max_tokens: 128000, // Consider increasing if examples make prompts too long
+      max_tokens: 256000, // Consider increasing if examples make prompts too long
     });
 
     const content = completion.choices[0]?.message?.content || '';
