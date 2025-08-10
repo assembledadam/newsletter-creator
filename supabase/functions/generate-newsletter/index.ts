@@ -74,7 +74,7 @@ ${itemsText}`
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      temperature: 0.7,
+      // temperature: 1,
       // max_tokens: 256000, // Consider increasing if examples make prompts too long
     });
 

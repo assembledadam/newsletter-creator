@@ -96,7 +96,7 @@ Include the specific year and, if relevant, the names of key inventors or resear
         content: `Here are the search results for historical events on ${formattedDate}:\n\n${JSON.stringify(searchResults, null, 2)}`
       }
     ],
-    temperature: 0.7,
+    // temperature: 1,
     // max_tokens: 1000
   });
 
